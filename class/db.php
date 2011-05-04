@@ -142,7 +142,7 @@ class Db
     /**
      *
      */
-    public final function query($sql){
+    public final function query($sql, array $args = array()){
         $this->sql_query     = $sql;
         $idx                 = md5($sql);
 
@@ -166,6 +166,9 @@ class Db
             if (false === strpos($sql, $k)) continue;
             $params[$k] = $v;
         }// end foreach
+
+        if (empty($params) && !empty($args)) 
+            $params = $args;
 
         /**
          * execute sql statement here
@@ -212,7 +215,7 @@ class Db
     /**
      *
      */
-    public function execute($sql) {
+    public function execute($sql, array $args = array()) {
         $this->sql_execute = $sql;
         self::$Stats['execute'] += 1;
 
@@ -221,6 +224,9 @@ class Db
             if (false === strpos($sql, $k)) continue;
             $params[$k] = $v;
         }// end foreach
+
+        if (empty($params) && !empty($args))
+            $params = $args;
 
         if (self::$Debug) App\logger($sql);
 

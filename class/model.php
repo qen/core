@@ -574,9 +574,9 @@ class Model extends Base implements ArrayAccess, IteratorAggregate
      * @access
      * @var
      */
-    public final function sqlSelect($sql)
+    public final function sqlSelect($sql, $bindvars = array())
     {
-        return $this->db->query($sql);
+        return $this->db->query($sql, $bindvars);
     }
 
     /**
@@ -584,9 +584,9 @@ class Model extends Base implements ArrayAccess, IteratorAggregate
      * @access
      * @var
      */
-    public final function sqlExecute($sql)
+    public final function sqlExecute($sql, $bindvars = array())
     {
-        return $this->db->execute($sql);
+        return $this->db->execute($sql, $bindvars);
     }
 
     /**

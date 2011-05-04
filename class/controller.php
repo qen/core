@@ -24,6 +24,7 @@ namespace Core;
 use Core\App\Path;
 use Core\App\Route;
 use Core\App;
+use Core\Tools;
 use \ArrayAccess;
 
 /**
@@ -258,6 +259,11 @@ class Controller implements ArrayAccess
                 
             case 'set_view_dir':
                 Path::ViewDir($value);
+                break;
+
+            case 'validate':
+                Tools::Validate($value, $arg);
+                return true;
                 break;
 
             default:
