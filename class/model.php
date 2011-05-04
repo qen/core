@@ -190,12 +190,12 @@ class Model extends Base implements ArrayAccess, IteratorAggregate
             );
 
             $schema = $this->schema['self']['fields'];
-            $is_bit = ('bit' == $schme[$offset]) ? true : false;
+            $is_bit = ('bit' == $schema[$offset]) ? true : false;
             if ($is_bit === false && !empty($this->schema['parent'])) {
                 $schema = $this->schema['parent']['fields'];
                 $is_bit = ('bit' == $schema[$offset]) ? true : false;
             }//end if
-
+            
             if ($is_bit) $retval = Tools::Sanitize($retval, $schema, false);
                 
             return $retval[$offset];
