@@ -568,7 +568,7 @@ namespace Core\App {
         $logfile    = Path::TempDir('').'/'.$file;
         $datetime   = date("Y-m-d H:i:s");
         $dump       = var_export($value, true);
-        error_log("[{$datetime}] {$dump}\n", 3, $logfile);
+        error_log("\n[{$datetime}]\n{$dump}\n", 3, $logfile);
     }
 
     function redirect($arg = '', array $get=array())
@@ -584,17 +584,17 @@ namespace Core\App {
             if (!preg_match('|/$|', $path))
                 $path .= '/';
 
-            /**
-             * if parent path is defined,
-             * remove the last path part to get to the parent
-             */
-            if (preg_match('|(\.\./)|', $arg)) {
-                $path   = explode('/', $path);
-                array_pop($path);
-                array_pop($path);
-                $path   = implode('/', $path);
-                $arg    = substr($arg, 2);
-            }//end if
+//            /**
+//             * if parent path is defined,
+//             * remove the last path part to get to the parent
+//             */
+//            if (preg_match('|(\.\./)|', $arg)) {
+//                $path   = explode('/', $path);
+//                array_pop($path);
+//                array_pop($path);
+//                $path   = implode('/', $path);
+//                $arg    = substr($arg, 2);
+//            }//end if
 
             $path .= $arg;
 

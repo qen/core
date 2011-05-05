@@ -126,16 +126,14 @@ class Db
      */
     public function bind($name, $value)
     {
-        $key = array_search($value, self::$bindvars);
-
+        $key = array_search($value, self::$bindvars, true);
+        
         if ($key === false) {
             $name   = str_replace('.', '_', $name);
             $key    = ":{$name}_" . count(self::$bindvars);
             self::$bindvars[$key] = $value;
         }//end if
-
-        self::$Stats['bindvars'] += count(self::$bindvars);
-
+        
         return $key;
     }
 
@@ -144,14 +142,12 @@ class Db
      */
     public final function query($sql, array $args = array()){
         $this->sql_query     = $sql;
-        $idx                 = md5($sql);
-
         self::$Stats['query'] += 1;
         /**
          * prepare sql statement here
          */
         $psql = trim($sql);
-
+        $idx  = md5($psql);
         if (!array_key_exists($idx, $this->rst)) {
             $this->rst[$idx] = $this->cnn->prepare(
                 $psql,
@@ -203,8 +199,6 @@ class Db
         
         if (preg_match("/group by/is", $query))
             $sql = "select count(*) as cnt from ({$query}) as counted";
-        
-        if (self::$Debug) App\logger($sql);
 
         $retval = $this->query($sql);
         if ($retval === false) return false;
@@ -228,16 +222,23 @@ class Db
         if (empty($params) && !empty($args))
             $params = $args;
 
-        if (self::$Debug) App\logger($sql);
+        $psql = trim($sql);
+        $idx  = md5($psql);
+        if (!array_key_exists($idx, $this->rst)) {
+            $this->rst[$idx] = $this->cnn->prepare($psql);
+        }//end if
 
-        $count = $this->cnn->exec($sql);
-        if ($count === false) {
+        if (self::$Debug) App\logger(array($psql, $params));
+        
+        #$count = $this->cnn->exec($sql);
+        $result = $this->rst[$idx]->execute($params);
+        if ($result === false) {
             $dump       = $this->cnn->errorInfo();
             $message    = "{$dump[0]} [{$dump[1]}] {$dump[2]} \n\r {$this->sql_execute} {$count}";
             throw new Exception($message);
         }//end if
 
-        return $count;
+        return $this->rst[$idx]->rowCount();
     }// end function 
 
     /**

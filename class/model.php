@@ -921,7 +921,8 @@ class Model extends Base implements ArrayAccess, IteratorAggregate
              * add to condition if not empty
              */
             if (isset($data[$v['name']]))
-                $conditions[$idx][] = "`{$schema['table']}`.`{$v['name']}` = ".$this->db->escape($data[$v['name']]);
+                #$conditions[$idx][] = "`{$schema['table']}`.`{$v['name']}` = ".$this->db->escape($data[$v['name']]);
+                $conditions[$idx][] = "`{$schema['table']}`.`{$v['name']}` = ".$this->db->bind($v['name'], $data[$v['name']]);
 
             /**
              * clear auto increment field
@@ -1021,7 +1022,7 @@ class Model extends Base implements ArrayAccess, IteratorAggregate
 		 * add/update data here
 		 */
         $dump = self::BuildWriteSql($data, $schema, $db, $conditions);
-
+        
         $db->execute($dump['sql']);
         $debug[__FUNCTION__][] = $dump;
         $debug[__FUNCTION__][] = $data;
@@ -1060,8 +1061,15 @@ class Model extends Base implements ArrayAccess, IteratorAggregate
 
                 if (!array_key_exists($k, $fieldnames)) continue;
 
-                $values[]   = (is_null($v)? 'NULL' : $db->escape($v));
+                #$values[]   = (is_null($v)? 'NULL' : $db->escape($v));
                 $columns[]  = "`{$k}`";
+
+                if (is_null($v)) {
+                    $values[] = 'NULL';
+                    continue;
+                }//end if
+
+                $values[]   = $db->bind($k, $v);
 
             }//end foreach
 
@@ -1070,12 +1078,19 @@ class Model extends Base implements ArrayAccess, IteratorAggregate
         } else {
 
             $retval["action"] = "update";
-
+            
             foreach($vars as $k=>$v) {
 
                 if (!array_key_exists($k, $fieldnames)) continue;
 
-                $values[] = "`{$k}` = ".(is_null($v)? 'NULL' : $db->escape($v));
+                #$values[] = "`{$k}` = ".(is_null($v)? 'NULL' : $db->escape($v));
+
+                if (is_null($v)) {
+                    $values[] = "`{$k}` = NULL";
+                    continue;
+                }//end if
+                
+                $values[]   = "`{$k}` = ".$db->bind($k, $v);
 
             }//end foreach
 

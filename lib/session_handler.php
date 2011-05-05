@@ -31,12 +31,12 @@ session_set_save_handler(
             return false;
 
         $db     = Db::Instance();
-        $sql    = "select session_data from core_sessions where sessionid = ".$db->escape($id)." and session_ip = ".$db->escape($_SERVER["REMOTE_ADDR"])." limit 1";
-        $result = $db->query($sql);
+        $sql    = "select session_data from core_sessions where sessionid = ? and session_ip = ? limit 1";
+        $result = $db->query($sql, array($id, $_SERVER["REMOTE_ADDR"]));
 
         if (empty($result)) {
-            $sql = "insert into core_sessions (sessionid, session_ip, date_created, date_updated) values (".$db->escape($id).", ".$db->escape($_SERVER["REMOTE_ADDR"]).", NOW(), ".time().")";
-            $db->execute($sql);
+            $sql = "insert into core_sessions (sessionid, session_ip, date_created, date_updated) values (?, ?, NOW(), ?)";
+            $db->execute($sql, $id, $_SERVER["REMOTE_ADDR"], time());
             return false;
         }//end if
 
@@ -49,8 +49,8 @@ session_set_save_handler(
             return false;
 
         $db     = Db::Instance();
-        $sql    = "update core_sessions set session_data = ".$db->escape($data).", date_updated = ".time()." where sessionid = ".$db->escape($id)." and session_ip = ".$db->escape($_SERVER["REMOTE_ADDR"])." limit 1";
-        $result = $db->execute($sql);
+        $sql    = "update core_sessions set session_data = ?, date_updated = ? where sessionid = ? and session_ip = ? limit 1";
+        $result = $db->execute($sql, array($data, time(), $id, $_SERVER["REMOTE_ADDR"]));
 
         return true;
     },
@@ -60,16 +60,16 @@ session_set_save_handler(
             return false;
 
         $db     = Db::Instance();
-        $sql    = "delete core_sessions where sessionid = ".$db->escape($id)." and session_ip = ".$db->escape($_SERVER["REMOTE_ADDR"])." limit 1";
-        $result = $db->execute($sql);
+        $sql    = "delete core_sessions where sessionid = ? and session_ip = ? limit 1";
+        $result = $db->execute($sql, array($id, $_SERVER["REMOTE_ADDR"]));
 
         return true;
     },
     // gc
     function($maxlifetime) {
         $db     = Db::Instance();
-        $sql    = "delete from core_sessions where date_updated < " . (time() - $maxlifetime);
-        $result = $db->execute($sql);
+        $sql    = "delete from core_sessions where date_updated < ?";
+        $result = $db->execute($sql, array((time() - $maxlifetime)));
 
         return true;
     });
