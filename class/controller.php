@@ -46,6 +46,18 @@ class Controller implements ArrayAccess
     private $class          = '';
 
     /**
+     * @todo setting use for post/get, plan is data validation?
+     */
+    public $settings = array(
+        'post'     => array(),
+        'get'      => array(),
+        'cookies'   => array(
+            'expire'    => 1,
+            'path'      => ''
+        )
+    );
+
+    /**
      *
      * @access
      * @var
@@ -334,18 +346,12 @@ class Controller implements ArrayAccess
             case '@cookie':
                 $cuky_name  = $offset;
                 $cuky_value = $value;
-                $config     = array(
-                    'expire'    => 1,
-                    'path'      => ''
-                );
+                $config     = $this->settings['cookies'];
 
                 $cuky_config = array();
                 
-                if (is_array($value))
-                    list($cuky_value, $expire, $path) = $value;
-                
                 if (empty($expire) || !is_numeric($expire))
-                    $expire = 24;
+                    $expire = 1;
 
                 if (empty($path))
                     $config['path'] = Path::Uri('root');
@@ -353,6 +359,8 @@ class Controller implements ArrayAccess
                 $config['expire'] = time() + (3600 * $expire);
                 if (is_null($cuky_value))
                     $config['expire'] = time() - 3600;
+                else
+                    $cuky_value = Tools::Hash($cuky_value);
 
                 setcookie($cuky_name, $cuky_value, $config['expire'], $config['path']);
                 break;
@@ -456,7 +464,9 @@ class Controller implements ArrayAccess
 
             case '@cookie':
                 if ($offset == '*') return $_COOKIE;
-                return $_COOKIE[$offset];
+                if (empty($_COOKIE[$offset])) return '';
+                
+                return Tools::Hash($_COOKIE[$offset]);
                 break;
 
             case '@uri':
