@@ -36,7 +36,7 @@ session_set_save_handler(
 
         if (empty($result)) {
             $sql = "insert into core_sessions (sessionid, session_ip, date_created, date_updated) values (?, ?, NOW(), ?)";
-            $db->execute($sql, $id, $_SERVER["REMOTE_ADDR"], time());
+            $db->execute($sql, array($id, $_SERVER["REMOTE_ADDR"], time()));
             return false;
         }//end if
 
