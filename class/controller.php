@@ -360,7 +360,7 @@ class Controller implements ArrayAccess
                 if (is_null($cuky_value))
                     $config['expire'] = time() - 3600;
                 else
-                    $cuky_value = Tools::Hash($cuky_value);
+                    $cuky_value = Tools::Hash($cuky_value, array('mode' => 'encode'));
 
                 setcookie($cuky_name, $cuky_value, $config['expire'], $config['path']);
                 break;
@@ -466,7 +466,7 @@ class Controller implements ArrayAccess
                 if ($offset == '*') return $_COOKIE;
                 if (empty($_COOKIE[$offset])) return '';
                 
-                return Tools::Hash($_COOKIE[$offset]);
+                return Tools::Hash($_COOKIE[$offset], array('mode' => 'decode'));
                 break;
 
             case '@uri':
