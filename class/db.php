@@ -126,11 +126,16 @@ class Db
      */
     public function bind($name, $value)
     {
-        $key = array_search($value, self::$bindvars, true);
+        $key = array_search($value, self::$bindvars);
         
+        if ($key !== false) {
+            if (self::$bindvars[$key] != $value) 
+                $key = false;
+        }//end if
+
         if ($key === false) {
             $name   = str_replace('.', '_', $name);
-            $key    = ":{$name}_" . count(self::$bindvars);
+            $key    = ":{$name}_" . substr(md5(time().$value.count(self::$bindvars)), 0, 8);
             self::$bindvars[$key] = $value;
         }//end if
         
