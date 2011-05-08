@@ -110,6 +110,7 @@ class Model extends Base implements ArrayAccess, IteratorAggregate
     public static $Name         = '';
     public static $Table_Name   = '';
     public static $Sanitize     = array();
+    public static $Custom_Field = array();
     public static $Find_Options = array(
         'selpage'       => 1,
         'limit'         => 20,
@@ -597,6 +598,16 @@ class Model extends Base implements ArrayAccess, IteratorAggregate
     public final function sqlEscape($param)
     {
         return $this->db->escape($param);
+    }
+
+    /**
+     *
+     * @access
+     * @var
+     */
+    public final function sqlBind($name, $value)
+    {
+        return $this->db->bind($name, $value);
     }
 
     /**
@@ -1389,6 +1400,8 @@ class Model extends Base implements ArrayAccess, IteratorAggregate
                 $conditions[$this->associations[$k]['fkey']] = "`{$schema['table']}`.`{$schema['pkeys'][0]['name']}`";
                 $jointable = $this->associations[$k]['module']('sqljoin', $conditions);
                 unset($find['join'][$k]);
+                
+                if (!empty($v)) $v = "AND {$v}";
                 foreach ($jointable as $table => $criteria)
                     $find['join'][$table] = "{$criteria} {$v}";
 
@@ -1712,7 +1725,7 @@ class Model extends Base implements ArrayAccess, IteratorAggregate
         /**
          * column selection
          */
-        $cols = "{$schema['table']}.*";
+        $cols = array("{$schema['table']}.*");
 
         if (!empty($columns)) {
             $cols = array();
@@ -1726,8 +1739,15 @@ class Model extends Base implements ArrayAccess, IteratorAggregate
                 $cols[] = $v;
             }// end foreach
 
-            $cols = implode(", ", $cols);
+            
         }//end if
+
+        if (!empty(static::$Custom_Field)) {
+            foreach (static::$Custom_Field as $k => $v) 
+                $cols[] = "{$v} as {$k}";
+        }//end if
+
+        $cols = implode(", ", $cols);
 
 		$sql['select'] = "
         select {$cols}
