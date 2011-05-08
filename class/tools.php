@@ -58,12 +58,14 @@ class Tools {
      */
     public static function Hyphenate($string)
     {
-        $patterns[] = '@[,\.:\*<>|\/"\?]@';
+        $patterns[] = '@[,\.:\*<>|"\?]@';
         $patterns[] = '@\\\@';
         $patterns[] = '@[&]@';
+        $patterns[] = '@[\/]@';
         $replacements[] = '';
         $replacements[] = '';
         $replacements[] = 'and';
+        $replacements[] = 'or';
 
         $retval = preg_replace($patterns, $replacements, strtolower(trim($string)));
         $retval = preg_replace('| |', '-', trim($retval));
