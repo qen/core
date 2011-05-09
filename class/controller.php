@@ -188,7 +188,7 @@ class Controller implements ArrayAccess
 
             case 'http_status':
                 $this->doFinalizeController();
-                App\http_status($value);
+                App\http_status($value, $arg);
                 break;
 
             case 'http_modified':

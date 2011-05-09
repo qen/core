@@ -606,13 +606,19 @@ namespace Core\App {
         Route::Url($path);
     }
 
-    function http_status($code,  $msg = 'The page that you have requested could not be found.')
+    function http_status($code,  $arg = 'The page that you have requested could not be found.')
     {
         $exit_text = '';
         if ($code == 404){
             $code       = '404 Not Found';
-            $exit_text  = '<h1>404 Not Found</h1>'.$msg;
+            $exit_text  = '<h1>404 Not Found</h1>'.$arg;
             while (@ob_end_clean());
+        }//end if
+
+        if ($code == 301) {
+            while (@ob_end_clean());
+            @header("HTTP/1.1 301 Moved Permanently");
+            redirect($arg);
         }//end if
 
         /**
