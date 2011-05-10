@@ -14,6 +14,7 @@ foreach ($argv as $k => $v) {
 
 if ($app['path'] == 'app' && !is_dir($app['path'])) {
     $pwd = getcwd();
+    $app['path'] = "{$pwd}/app";
     if (!is_dir("{$pwd}/app"))
         mkdir("{$pwd}/app", 0775);
 }//end if
