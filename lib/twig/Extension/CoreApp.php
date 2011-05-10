@@ -29,6 +29,12 @@ class Twig_Extension_CoreApp extends Twig_Extension
         return $filters;
     }
 
+    public function getTests() {
+        return array(
+            'email' => new Twig_Test_Function('twig_test_email')
+        );
+    }
+
     /**
      * Returns a list of operators to add to the existing list.
      *
@@ -111,4 +117,9 @@ function twig_cssminify_filter($str)
 function twig_dump_filter($var)
 {
     return '<pre>'.var_export($var, true).'</pre>';
+}
+
+function twig_test_email($value)
+{
+    return preg_match('/^[a-z0-9_\-\+]+(\.[_a-z0-9\-\+]+)*@([_a-z0-9\-]+\.)+([a-z]{2}|aero|arpa|biz|com|coop|edu|gov|info|int|jobs|mil|museum|name|nato|net|org|pro|travel)$/i', $value);
 }
