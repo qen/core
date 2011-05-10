@@ -45,18 +45,23 @@ $coredir    = realpath(dirname(__FILE__).'/../');
 $appdir_parent  = realpath("{$appdir}/../");
 $coredir_parent = realpath("{$coredir}/../");
 $lookup_prefix  = '';
+echo <<<EOF
+appdir = {$appdir}
+coredir = {$coredir}
+
+EOF;
 
 if ($appdir_parent == $coredir_parent) 
     $lookup_prefix = str_replace($appdir_parent.'/', '', $appdir).'/';
 
 if (!is_dir("{$appdir}/controllers") && is_dir("{$coredir}/app/controllers"))
     symlink("{$coredir}/app/controllers", "{$appdir}/controllers");
-else
+elseif ( !is_dir("{$appdir}/controllers") )
     mkdir("{$appdir}/controllers", 0775);
 
 if (!is_dir("{$appdir}/modules") && is_dir("{$coredir}/app/modules"))
     symlink("{$coredir}/app/modules", "{$appdir}/modules");
-else
+elseif ( !is_dir("{$appdir}/modules") )
     mkdir("{$appdir}/modules", 0775);
 
 if (empty($app['webroots'])) $app['webroots'] = 'webroot';
