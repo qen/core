@@ -580,7 +580,9 @@ namespace Core\App {
          */
         if (!preg_match('|^/|', $arg)) {
             $path = Path::$Uri['path'];
-
+            $full = Path::$Uri['full'];
+            $path = (empty($path) && !empty($full)? $full : $path);
+            
             if (!preg_match('|/$|', $path))
                 $path .= '/';
 
