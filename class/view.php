@@ -27,10 +27,14 @@
  */
 namespace Core;
 
+use Core\App;
 use Core\App\Path;
 use Core\App\Config as AppConfig;
 
-class View extends Base{
+class View
+{
+
+    public static $Debug = true;
 
     private static $Parser      = null;
     private static $Instance    = null;
@@ -45,7 +49,7 @@ class View extends Base{
      * @access
      * @var
      */
-    protected function initialize()
+    public function  __construct()
     {
         if (isset(self::$Instance))
             throw new Exception('Construct failed on Singleton class['.__CLASS__.']');
@@ -133,7 +137,6 @@ class View extends Base{
         );
         
         $config = AppConfig::Twig();
-        $this->fireEvent('response', array($config));
         
         if (!is_array($config))
             $config = array();
@@ -165,19 +168,33 @@ class View extends Base{
             $uri['rootpath']        = str_replace($uri['root'], '', $uri['path']);
             $tplfolder              = ($uri['method'] == 'index') ? '/': '/'.$uri['method'] ;
             $template_assumptions   = array(
-                'check folder/index.html'   => "{$uri['rootpath']}{$tplfolder}index.html",
-                'check folder.html'         => "{$uri['rootpath']}{$tplfolder}.html",
-                'check request.html'        => "{$uri['request']}.html",
+                "{$uri['rootpath']}{$tplfolder}index.html", // 'check folder/index.html'
+                "{$uri['rootpath']}{$tplfolder}.html", // 'check folder.html'
+                "{$uri['request']}.html", // 'check request.html'
             );
 
+            /**
+             * if tplfolder is / prioritize request folder assumptions
+             */
+            if ($tplfolder == '/') {
+                array_unshift($template_assumptions, "{$uri['request']}.html"); // 'check request.html'
+                array_unshift($template_assumptions, "{$uri['request']}/index.html"); // 'check request/index.html'
+            }//end if
+
+            $verbose = array();
+            $verbose[] = "rootpah   = {$uri['rootpath']}";
+            $verbose[] = "tplfolder = {$tplfolder}";
+            
             foreach ($template_assumptions as $k => $v) {
                 self::$Template = $v;
-                //Debug::Dump($k, self::$Template, $uri);
+
                 try {
                     $loader->isFresh(self::$Template, 0);
+                    $verbose[] = "using {$v}";
                     break;
                 } catch (\Exception $exc) {
                     self::$Template = null;
+                    $verbose[] = "{$v} not found";
                 }//end try
             }// end foreach
 
@@ -196,9 +213,12 @@ class View extends Base{
         if (!preg_match('|\.html?$|', self::$Template))
             self::$Template = self::$Template.'/'.Path::Uri('method').'.html';
         
-        self::$Assignments['App']['template'] = $template;
-
+        #self::$Assignments['App']['template'] = $template;
+        
         $engine->loadTemplate(self::$Template)->display(self::$Assignments);
+
+        if (self::$Debug) 
+            App\logger(array($uri, $template_assumptions, $verbose));
 
     }
 

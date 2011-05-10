@@ -21,9 +21,9 @@
  */
 namespace Core;
 
+use Core\App;
 use Core\App\Path;
 use Core\App\Route;
-use Core\App;
 use Core\Tools;
 use \ArrayAccess;
 
