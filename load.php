@@ -563,12 +563,12 @@ namespace Core\App {
      * app functions
      */
 
-    function logger($value, $file = 'messages.log')
+    function logger($value, $title = '', $file = 'messages.log')
     {
         $logfile    = Path::TempDir('').'/'.$file;
         $datetime   = date("Y-m-d H:i:s");
         $dump       = var_export($value, true);
-        error_log("\n[{$datetime}]\n{$dump}\n", 3, $logfile);
+        error_log("\n[{$datetime}] {$title}\n{$dump}\n", 3, $logfile);
     }
 
     function redirect($arg = '', array $get=array())
@@ -777,7 +777,7 @@ namespace Core\App {
     set_error_handler(function($errno, $errstr, $errfile, $errline){
         if ($errno & (\E_NOTICE ^ \E_WARNING ^ E_STRICT) ) return true;
 
-        logger("[{$datetime}]Error {$errno} | {$errfile} @line {$errline}\n{$errstr}\n\n", 'error.log');
+        logger("[{$datetime}]Error {$errno} | {$errfile} @line {$errline}\n{$errstr}\n\n", 'PHP :: set_error_handler', 'error.log');
         return true;
     });
     

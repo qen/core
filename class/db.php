@@ -169,7 +169,7 @@ class Db
         /**
          * execute sql statement here
          */
-        if (self::$Debug) App\logger(array($psql, $params));
+        if (self::$Debug) App\logger(array($psql, $params) , __CLASS__);
         
         $check = $this->rst[$idx]->execute($params);
 
@@ -228,7 +228,7 @@ class Db
             $this->rst[$idx] = $this->cnn->prepare($psql);
         }//end if
 
-        if (self::$Debug) App\logger(array($psql, $params));
+        if (self::$Debug) App\logger(array($psql, $params), __CLASS__);
         
         #$count = $this->cnn->exec($sql);
         $result = $this->rst[$idx]->execute($params);
@@ -325,7 +325,7 @@ class Db
             'pkeys'     => $pkeys,
         );
         
-        if (self::$Debug) App\logger($this->schemas[$table]);
+        if (self::$Debug) App\logger($this->schemas[$table], __CLASS__);
 
         return $this->schemas[$table];
     }

@@ -986,7 +986,7 @@ class Model extends Base implements ArrayAccess, IteratorAggregate
          * write data to db
          */
         list($data, $this->debug) =
-            self::Write($data, $schema, $this->db, $conditions);
+            self::WriteSql($data, $schema, $this->db, $conditions);
 
         foreach ($data as $k => $v)
             $this[$k] = $v;
@@ -1025,7 +1025,7 @@ class Model extends Base implements ArrayAccess, IteratorAggregate
      * @param array $conditions
      * @return <type>
      */
-    private final static function Write(array $data, array $schema, $db, array $conditions = array())
+    private final static function WriteSql(array $data, array $schema, $db, array $conditions = array())
     {
         $debug[__FUNCTION__] = array();
 
@@ -1247,7 +1247,7 @@ class Model extends Base implements ArrayAccess, IteratorAggregate
         /**
          * finally call delete here
          */
-        $this->debug = self::Delete($data, $schema, $this->db, $conditions);
+        $this->debug = self::DeleteSql($data, $schema, $this->db, $conditions);
 
         /**
          * every time this is called
@@ -1262,7 +1262,7 @@ class Model extends Base implements ArrayAccess, IteratorAggregate
      * @access
      * @var
      */
-    private final static function Delete($data, $schema, $db, $conditions = array())
+    private final static function DeleteSql($data, $schema, $db, $conditions = array())
     {
         $debug[__FUNCTION__] = array();
 
@@ -1453,7 +1453,7 @@ class Model extends Base implements ArrayAccess, IteratorAggregate
         /**
          * call search here
          */
-        $retval = self::Search($query, $schema, $this->db, $find);
+        $retval = self::SearchSql($query, $schema, $this->db, $find);
 
         if ($retval[0] === false){
             $this->sql      = $retval[1];
@@ -1613,7 +1613,7 @@ class Model extends Base implements ArrayAccess, IteratorAggregate
      * @access
      * @var
      */
-    private final static function Search($query, $schema, $db, array $options = array())
+    private final static function SearchSql($query, $schema, $db, array $options = array())
     {
         $find_options = array(
             'selpage'       => 1, // set to 0 to remove limit
@@ -1663,9 +1663,15 @@ class Model extends Base implements ArrayAccess, IteratorAggregate
 		$values = array();
 
         $find = Tools::ArrayMerge($conditions, $where);
+        $table_fields = array_keys($schema['fields']);
+
+        if (!empty(static::$Custom_Field)) {
+            foreach (static::$Custom_Field as $k => $v) 
+                $table_fields[] = $k;
+        }//end if
 
 		if (count($find) != 0)
-            $match = self::BuildSearchSql($schema['table'], array_keys($schema['fields']), $find, $db);
+            $match = self::BuildSearchSql($schema['table'], $table_fields, $find, $db);
 
 		if (count($subquery) != 0) {
 			foreach($subquery as $k=>$v) {

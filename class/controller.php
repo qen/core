@@ -46,12 +46,12 @@ class Controller implements ArrayAccess
     private $class          = '';
 
     /**
-     * @todo setting use for post/get, plan is data validation?
+     * @todo settings use for post/get, do data validate or sanitize
      */
-    public $settings = array(
-        'post'     => array(),
-        'get'      => array(),
-        'cookies'   => array(
+    public $options = array(
+        '@post'     => array(),
+        '@get'      => array(),
+        '@cookie'   => array(
             'expire'    => 1,
             'path'      => ''
         )
@@ -245,7 +245,7 @@ class Controller implements ArrayAccess
             case 'logger':
                 $trace = debug_backtrace();
                 $caller = $trace[0];
-                App\logger(array("{$caller['file']} @line {$caller['line']}", $value));
+                App\logger(array("{$caller['file']} @line {$caller['line']}", $value), $this->class);
                 break;
 
             case 'flash_expire':
@@ -346,10 +346,11 @@ class Controller implements ArrayAccess
             case '@cookie':
                 $cuky_name  = $offset;
                 $cuky_value = $value;
-                $config     = $this->settings['cookies'];
-
-                $cuky_config = array();
+                $config     = $this->options['@cookie'];
                 
+                $expire = $config['expire'];
+                $path   = $config['path'];
+
                 if (empty($expire) || !is_numeric($expire))
                     $expire = 1;
 
@@ -362,6 +363,7 @@ class Controller implements ArrayAccess
                 else
                     $cuky_value = Tools::Hash($cuky_value, array('mode' => 'encode'));
 
+                $_COOKIE[$cuky_name] = $cuky_value;
                 setcookie($cuky_name, $cuky_value, $config['expire'], $config['path']);
                 break;
 

@@ -130,8 +130,31 @@ if (!empty($lookup_prefix)) {
 
 $data = <<<EOF
 <?php
+/**
+ * Project:     CORE FRAMEWORK
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; either
+ * version 2.1 of the License, or (at your option) any later version.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ *
+ * @author Qen Empaces
+ * @email qen.empaces@gmail.com
+ * @version rc7
+ * @date 2011.05.11
+ *
+ */
 
 namespace Core\App;
+
+use Core\Db;
+use Core\View;
 
 ##############################################################
 # do not touch this not unless you know what you are doin
@@ -165,7 +188,8 @@ include 'lib/session_handler.php';
  * for development purposes
  */
 error_reporting(E_ALL ^ E_NOTICE);
-\Core\Db::\$Debug = false; // set to true to dump all sql statement in messages.log
+Db::\$Debug     = false; // set to true to dump all sql statement in messages.log
+View::\$Debug   = false; // set to true to dump stuff in messages.log
 
 Route::Request();
 

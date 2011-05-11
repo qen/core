@@ -162,9 +162,10 @@ class View
         
         $loader = new \Twig_Loader_CoreAppFilesystem(Path::ViewDir(), \Core\App\PATH);
         $engine = new \Twig_EnvironmentCoreApp($loader, $config);
-
+        $uri    = Path::Uri();
+        
         if (empty(self::$Template)) {
-            $uri = Path::Uri();
+            
             $uri['rootpath']        = str_replace($uri['root'], '', $uri['path']);
             $tplfolder              = ($uri['method'] == 'index') ? '/': '/'.$uri['method'] ;
             $template_assumptions   = array(
@@ -218,7 +219,7 @@ class View
         $engine->loadTemplate(self::$Template)->display(self::$Assignments);
 
         if (self::$Debug) 
-            App\logger(array($uri, $template_assumptions, $verbose));
+            App\logger(array($uri, self::$Template, $template_assumptions, $verbose), __CLASS__);
 
     }
 
