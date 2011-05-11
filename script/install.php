@@ -105,7 +105,8 @@ foreach ($app['webroots'] as $k => $v) {
     $templates['htaccess'][] = <<<EOF
 # -- {$v} --
 RewriteCond %{REQUEST_FILENAME} !-f
-RewriteRule ^(.+) {$lookup_prefix}{$v}/$1 [NC]
+RewriteCond %{REQUEST_URI} (.+\.(gif|jpe?g|png|css|js|pdf|doc|xml|txt|ico|swf|flv|cur|zip|htc?))$
+RewriteRule ^(.+) {$lookup_prefix}{$v}%{REQUEST_URI} [NC]
 EOF;
 }// end foreach
 
@@ -149,6 +150,7 @@ require "$coredir/load.php";
 
 /**
  * add secondary template lookup directory
+ * Path::ViewDir('[folder name only]');
  */
 {$templates['init']}
 
@@ -173,36 +175,58 @@ $public_folder = (empty($lookup_prefix))? $appdir:  $appdir_parent;
 
 file_put_contents("{$public_folder}/init.php", $data);
 
+/*
+RewriteEngine On
+RewriteBase /
+
+# ========================================================
+# insert additional folder assumptions here, before webroot is assumed
+# -- webpinoyjobs --
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_URI} (.+\.(gif|jpe?g|png|css|js|pdf|doc|xml|txt|ico|swf|flv|cur|zip|htc))$
+RewriteRule ^(.+) app/webpinoyjobs%{REQUEST_URI} [NC]
+# ========================================================
+
+# else check if exists on [webroot] folder
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_URI} (.+\.(gif|jpe?g|png|css|js|pdf|doc|xml|txt|ico|swf|flv|cur|zip|htc))$
+RewriteRule ^(.*)$ app/webroot%{REQUEST_URI} [NC]
+
+RewriteCond %{REQUEST_FILENAME} !-f [OR]
+RewriteCond %{REQUEST_FILENAME} !\.(gif|jpe?g|png|css|js|pdf|doc|xml|txt|ico|swf|flv|cur|zip|htc?)$
+RewriteRule ^(.*) init.php  [L]
+#RewriteRule ^(.*) dump.php?c=$1&uri=%{REQUEST_URI} [L]
+
+# fallback script
+#RewriteRule .  - [F]
+#RewriteCond %{REQUEST_FILENAME} !-f
+#RewriteRule ^(.*) init.php [L]
+#RewriteRule ^(.*) /phpinfo.php [L]
+#RewriteRule ^(.*)$ /phpinfo.php?q=$1 [F,L]
+#RewriteRule . /dump.php?f=$1 [L]
+*/
 
 $data = <<<EOF
-RewriteEngine on
-
-# if request didn't end with file extension gif|jpe?g|png|css|js|pdf|doc|xml|txt|ico|swf|flv|cur|zip|htc, redirect to init.php handler
-RewriteRule !\.(gif|jpe?g|png|css|js|pdf|doc|xml|txt|ico|swf|flv|cur|zip|htc?)$ init.php [L]
+RewriteEngine On
+RewriteBase /
 
 {$templates['htaccess']}
+
+# else check if exists on {$app['webroots'][0]} folder
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_URI} (.+\.(gif|jpe?g|png|css|js|pdf|doc|xml|txt|ico|swf|flv|cur|zip|htc?))$
+RewriteRule ^(.*)$ {$lookup_prefix}{$app['webroots'][0]}%{REQUEST_URI} [NC]
 
 # if file does not exists check if prefixed by [modules]
 RewriteCond %{REQUEST_FILENAME} !-f
 # check if uri pattern is modules/[name], if so assume it exists on modules/[name]/public folder
-RewriteCond %{REQUEST_URI} ^/modules/([^/]+)/(.+\.(gif|jpe?g|png|css|js|pdf|doc|xml|txt|ico|swf|flv|cur|zip|htc))$
+RewriteCond %{REQUEST_URI} ^/modules/([^/]+)/(.+\.(gif|jpe?g|png|css|js|pdf|doc|xml|txt|ico|swf|flv|cur|zip|htc?))$
 RewriteRule ^(.*) {$lookup_prefix}modules/%1/public/%2 [NC]
 
-# else check if exists on [{$app['webroots'][0]}] folder
-RewriteCond %{REQUEST_FILENAME} !-f
-RewriteCond %{REQUEST_URI} !^/webroot
-RewriteCond %{REQUEST_URI} (.+\.(gif|jpe?g|png|css|js|pdf|doc|xml|txt|ico|swf|flv|cur|zip|htc))$
-RewriteRule ^(.*)$ {$lookup_prefix}{$app['webroots'][0]}%1 [NC]
-
-# if still does not exists move up to one folder see if that works
-RewriteCond %{REQUEST_FILENAME} !-f
-RewriteCond %{REQUEST_URI} !^/webroot
-RewriteCond %{REQUEST_URI} ^/([^/]+)/(.+\.(gif|jpe?g|png|css|js|pdf|doc|xml|txt|ico|swf|flv|cur|zip|htc))$
-RewriteRule ^(.*)$ {$lookup_prefix}{$app['webroots'][0]}/%2 [NC]
-
-# fallback script
-RewriteCond %{REQUEST_FILENAME} !-f
-RewriteRule ^(.*) init.php [L]
+# everything else redirect to init.php
+RewriteCond %{REQUEST_FILENAME} !-f [OR]
+RewriteCond %{REQUEST_FILENAME} !\.(gif|jpe?g|png|css|js|pdf|doc|xml|txt|ico|swf|flv|cur|zip|htc?)$
+RewriteRule ^(.*) init.php  [L]
 
 EOF;
 
