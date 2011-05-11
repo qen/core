@@ -46,14 +46,22 @@ $coredir    = realpath(dirname(__FILE__).'/../');
 $appdir_parent  = realpath("{$appdir}/../");
 $coredir_parent = realpath("{$coredir}/../");
 $lookup_prefix  = '';
-echo <<<EOF
-appdir = {$appdir}
-coredir = {$coredir}
 
-EOF;
-
-if ($appdir_parent == $coredir_parent) 
+if ($appdir_parent == $coredir_parent)
     $lookup_prefix = str_replace($appdir_parent.'/', '', $appdir).'/';
+
+if (is_dir("{$appdir}/app")) {
+    $appdir_parent  = $appdir ;
+    $appdir         = "{$appdir}/app";
+    $lookup_prefix  = 'app';
+}//end if
+
+echo <<<EOF
+appdir  = {$appdir}
+coredir = {$coredir}
+prefix  = {$lookup_prefix}
+    
+EOF;
 
 if (!is_dir("{$appdir}/controllers") && is_dir("{$coredir}/app/controllers"))
     symlink("{$coredir}/app/controllers", "{$appdir}/controllers");
