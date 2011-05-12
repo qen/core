@@ -46,21 +46,25 @@ $coredir    = realpath(dirname(__FILE__).'/../');
 $appdir_parent  = realpath("{$appdir}/../");
 $coredir_parent = realpath("{$coredir}/../");
 $lookup_prefix  = '';
+$lookup_prefix_slashed = '';
 
-if ($appdir_parent == $coredir_parent)
+if ($appdir_parent == $coredir_parent) {
     $lookup_prefix = str_replace($appdir_parent.'/', '', $appdir).'/';
+    $lookup_prefix_slashed = '/'.$lookup_prefix;
+}//end if
 
 if (is_dir("{$appdir}/app")) {
     $appdir_parent  = $appdir ;
     $appdir         = "{$appdir}/app";
-    $lookup_prefix  = 'app';
+    $lookup_prefix  = 'app/';
+    $lookup_prefix_slashed = '/'.$lookup_prefix;
 }//end if
 
 echo <<<EOF
 appdir  = {$appdir}
 coredir = {$coredir}
 prefix  = {$lookup_prefix}
-    
+
 EOF;
 
 if (!is_dir("{$appdir}/controllers") && is_dir("{$coredir}/app/controllers"))
@@ -104,9 +108,10 @@ foreach ($app['webroots'] as $k => $v) {
 
     $templates['htaccess'][] = <<<EOF
 # -- {$v} --
-RewriteCond %{REQUEST_FILENAME} !-f
-RewriteCond %{REQUEST_URI} (.+\.(gif|jpe?g|png|css|js|pdf|doc|xml|txt|ico|swf|flv|cur|zip|htc?))$
-RewriteRule ^(.+) {$lookup_prefix}{$v}%{REQUEST_URI} [NC]
+RewriteCond %{ENV:assets} =yes
+RewriteCond {$appdir}/{$v}%{REQUEST_URI} -f
+RewriteRule ^(.*) {$lookup_prefix}{$v}%{REQUEST_URI} [L]
+
 EOF;
 }// end foreach
 
@@ -195,62 +200,130 @@ Route::Request();
 
 EOF;
 
-$public_folder = (empty($lookup_prefix))? $appdir:  $appdir_parent;
+$public_folder = (empty($lookup_prefix))? $appdir : $appdir_parent;
 
 file_put_contents("{$public_folder}/init.php", $data);
 
-/*
-RewriteEngine On
-RewriteBase /
+/*******************************************************************************
+ *
+ * OLD MOD REWRITE
+ *
+
+RewriteEngine on
+
+# if filename ends with php, htm or html redirect to init.php handler
+RewriteCond %{REQUEST_FILENAME} (php|html?)$
+RewriteRule ^(.*) init.php [L]
 
 # ========================================================
 # insert additional folder assumptions here, before webroot is assumed
-# -- webpinoyjobs --
+# -- clientadmin demo --
+#RewriteCond %{REQUEST_FILENAME} !-f
+#RewriteCond %{REQUEST_URI} ^/clientadmin(.+\.(gif|jpe?g|png|css|js|pdf|doc|xml|txt|ico|swf|flv|cur|zip))$
+#RewriteRule ^clientadmin/(.+) webpetalmanager/$1 [NC]
+
+# -- clientsite demo --
+#RewriteCond %{REQUEST_FILENAME} !-f
+#RewriteCond %{REQUEST_URI} ^/clientsite(.+\.(gif|jpe?g|png|css|js|pdf|doc|xml|txt|ico|swf|flv|cur|zip))$
+#RewriteRule ^clientsite/(.+) webpetalpublic/$1 [NC]
+
+# -- webrants --
+#RewriteCond %{REQUEST_FILENAME} !-f
+#RewriteRule ^(.+) webrants/$1 [NC]
+
+# -- webpetalmain --
 RewriteCond %{REQUEST_FILENAME} !-f
-RewriteCond %{REQUEST_URI} (.+\.(gif|jpe?g|png|css|js|pdf|doc|xml|txt|ico|swf|flv|cur|zip|htc))$
-RewriteRule ^(.+) app/webpinoyjobs%{REQUEST_URI} [NC]
+RewriteRule ^(.+) webpetalmain/$1 [NC]
 # ========================================================
+
+
+# if file does not exists check if prefixed by [modules]
+RewriteCond %{REQUEST_FILENAME} !-f
+# check if uri pattern is modules/[name], if so assume it exists on modules/[name]/public folder
+RewriteCond %{REQUEST_URI} ^/modules/([^/]+)/(.+\.(gif|jpe?g|png|css|js|pdf|doc|xml|txt|ico|swf|flv|cur|zip))$
+RewriteRule ^(.*) modules/%1/public/%2 [NC]
 
 # else check if exists on [webroot] folder
 RewriteCond %{REQUEST_FILENAME} !-f
-RewriteCond %{REQUEST_URI} (.+\.(gif|jpe?g|png|css|js|pdf|doc|xml|txt|ico|swf|flv|cur|zip|htc))$
-RewriteRule ^(.*)$ app/webroot%{REQUEST_URI} [NC]
+RewriteCond %{REQUEST_URI} !^/webroot
+RewriteCond %{REQUEST_URI} (.+\.(gif|jpe?g|png|css|js|pdf|doc|xml|txt|ico|swf|flv|cur|zip))$
+RewriteRule ^(.*)$ webroot%1 [NC]
 
-RewriteCond %{REQUEST_FILENAME} !-f [OR]
-RewriteCond %{REQUEST_FILENAME} !\.(gif|jpe?g|png|css|js|pdf|doc|xml|txt|ico|swf|flv|cur|zip|htc?)$
-RewriteRule ^(.*) init.php  [L]
-#RewriteRule ^(.*) dump.php?c=$1&uri=%{REQUEST_URI} [L]
+# if still does not exists move up to one folder see if that works
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_URI} !^/webroot
+RewriteCond %{REQUEST_URI} ^/([^/]+)/(.+\.(gif|jpe?g|png|css|js|pdf|doc|xml|txt|ico|swf|flv|cur|zip))$
+RewriteRule ^(.*)$ webroot/%2 [NC]
+
+#### debug ####
+#RewriteCond %{REQUEST_FILENAME} -f
+#RewriteRule ^(.*) debug.php?f=%{REQUEST_FILENAME}&u=%{REQUEST_URI}&rule=$1 [L]
+###############
 
 # fallback script
-#RewriteRule .  - [F]
-#RewriteCond %{REQUEST_FILENAME} !-f
-#RewriteRule ^(.*) init.php [L]
-#RewriteRule ^(.*) /phpinfo.php [L]
-#RewriteRule ^(.*)$ /phpinfo.php?q=$1 [F,L]
-#RewriteRule . /dump.php?f=$1 [L]
-*/
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteRule ^(.*) init.php [L]
 
-$data = <<<EOF
+ *
+ *
+ * ANOTHER VERSION WTF???
+ * 
+ *
+
 RewriteEngine On
 RewriteBase /
-
-{$templates['htaccess']}
 
 # else check if exists on {$app['webroots'][0]} folder
 RewriteCond %{REQUEST_FILENAME} !-f
 RewriteCond %{REQUEST_URI} (.+\.(gif|jpe?g|png|css|js|pdf|doc|xml|txt|ico|swf|flv|cur|zip|htc?))$
 RewriteRule ^(.*)$ {$lookup_prefix}{$app['webroots'][0]}%{REQUEST_URI} [NC]
+RewriteCond %{REQUEST_FILENAME} -f
+RewriteCond %{REQUEST_URI} (.+\.(gif|jpe?g|png|css|js|pdf|doc|xml|txt|ico|swf|flv|cur|zip|htc?))$
+RewriteRule (.*) - [L]
 
 # if file does not exists check if prefixed by [modules]
 RewriteCond %{REQUEST_FILENAME} !-f
 # check if uri pattern is modules/[name], if so assume it exists on modules/[name]/public folder
 RewriteCond %{REQUEST_URI} ^/modules/([^/]+)/(.+\.(gif|jpe?g|png|css|js|pdf|doc|xml|txt|ico|swf|flv|cur|zip|htc?))$
 RewriteRule ^(.*) {$lookup_prefix}modules/%1/public/%2 [NC]
+RewriteCond %{REQUEST_FILENAME} -f
+RewriteCond %{REQUEST_URI} (.+\.(gif|jpe?g|png|css|js|pdf|doc|xml|txt|ico|swf|flv|cur|zip|htc?))$
+RewriteRule (.*) - [L]
 
 # everything else redirect to init.php
 RewriteCond %{REQUEST_FILENAME} !-f [OR]
-RewriteCond %{REQUEST_FILENAME} !\.(gif|jpe?g|png|css|js|pdf|doc|xml|txt|ico|swf|flv|cur|zip|htc?)$
+RewriteCond %{REQUEST_URI} !\.(gif|jpe?g|png|css|js|pdf|doc|xml|txt|ico|swf|flv|cur|zip|htc?)$
 RewriteRule ^(.*) init.php  [L]
+
+*******************************************************************************/
+
+$data = <<<EOF
+Options FollowSymLinks
+RewriteEngine On
+RewriteBase /
+
+RewriteCond %{REQUEST_URI} (.+\.(gif|jpe?g|png|css|js|pdf|doc|xml|txt|ico|swf|flv|cur|zip|htc?))$
+RewriteRule (.*) - [E=assets:yes]
+
+{$templates['htaccess']}
+
+# else check if exists on {$app['webroots'][0]} folder
+RewriteCond %{ENV:assets} =yes
+RewriteCond {$appdir}/{$app['webroots'][0]}%{REQUEST_URI} -f
+RewriteRule ^(.*) {$lookup_prefix}{$app['webroots'][0]}%{REQUEST_URI} [L]
+
+# if file does not exists check if prefixed by [modules]
+RewriteCond %{ENV:assets} =yes
+RewriteCond %{REQUEST_URI} ^/modules/([^/]+)/(.+)$
+RewriteCond {$appdir}/modules/%1/public/%2 -f
+RewriteRule ^(.*) {$lookup_prefix}modules/%1/public/%2 [L]
+
+RewriteCond %{ENV:assets} =yes
+RewriteCond %{REQUEST_FILENAME} -f
+RewriteRule ^(.*) - [L]
+
+RewriteRule !init\.php - [C]
+RewriteRule (.*) init.php [L]
 
 EOF;
 
