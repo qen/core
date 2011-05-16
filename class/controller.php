@@ -21,11 +21,12 @@
  */
 namespace Core;
 
+use \ArrayAccess;
+use Core\Tools;
 use Core\App;
 use Core\App\Path;
 use Core\App\Route;
-use Core\Tools;
-use \ArrayAccess;
+use Core\App\Config as AppConfig;
 
 /**
  *
@@ -41,7 +42,7 @@ class Controller implements ArrayAccess
     public static $Method    = null;
 
     private $datasource     = '';
-    private $datasources    = array('@session', '@flash', '@notify', '@post', '@get', '@cookie', '@uri', '@server', '@template');
+    private $datasources    = array('@session', '@flash', '@notify', '@post', '@get', '@cookie', '@uri', '@server', '@template', '@config');
     private $datasessions   = array('@session', '@flash', '@notify');
     private $class          = '';
 
@@ -492,6 +493,10 @@ class Controller implements ArrayAccess
                     'default'   => View::DefaultTemplate(),
                     'render'    => View::Template()
                 );
+                break;
+
+            case '@config':
+                return AppConfig::$offset();
                 break;
 
             default:
