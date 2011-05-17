@@ -24,6 +24,8 @@ class Twig_Extension_CoreApp extends Twig_Extension
             'cssminify' => new Twig_Filter_Function('twig_cssminify_filter'),
             'base64'    => new Twig_Filter_Function('twig_base64_filter'),
             'dump'      => new Twig_Filter_Function('twig_dump_filter'),
+            'hyphenate' => new Twig_Filter_Function('twig_hyphenate_filter'),
+            'url_decode' => new Twig_Filter_Function('twig_url_decode_filter'),
         );
 
         return $filters;
@@ -122,4 +124,13 @@ function twig_dump_filter($var)
 function twig_test_email($value)
 {
     return preg_match('/^[a-z0-9_\-\+]+(\.[_a-z0-9\-\+]+)*@([_a-z0-9\-]+\.)+([a-z]{2}|aero|arpa|biz|com|coop|edu|gov|info|int|jobs|mil|museum|name|nato|net|org|pro|travel)$/i', $value);
+}
+
+use Core\Tools;
+function twig_hyphenate_filter($var) {
+    return Tools::Hyphenate($var);
+}
+
+function twig_url_decode_filter($var) {
+    return urldecode($var);
 }

@@ -662,6 +662,21 @@ class Model extends Base implements ArrayAccess, IteratorAggregate
      * @access
      * @var
      */
+    protected final function isAssociated($check)
+    {
+        if ($check instanceof Model)
+            $check = $obj('name');
+
+        if (array_key_exists($check, $this->associations)) return true;
+        return false;
+    }
+
+
+    /**
+     *
+     * @access
+     * @var
+     */
     public final function clear($include_cache = false)
     {
         $this->results      = array();

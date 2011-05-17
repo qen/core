@@ -61,8 +61,8 @@ class Tools {
         $patterns[] = '@[&]@';
         $patterns[] = '@[\/]@';
         $patterns[] = '@[\W]@';
-        $replacements[] = 'and';
-        $replacements[] = 'or';
+        $replacements[] = ' and ';
+        $replacements[] = ' andor ';
         $replacements[] = ' ';
 
         $retval = preg_replace($patterns, $replacements, strtolower(trim($string)));
