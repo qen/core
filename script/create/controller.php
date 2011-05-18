@@ -103,6 +103,7 @@ class $klass extends $extend
 
     /**
      * @param :deny_file_extensions
+     * @method :not_greedy
      */
     public function index()
     {
