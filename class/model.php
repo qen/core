@@ -57,16 +57,7 @@ use \ArrayIterator;
 use \IteratorAggregate;
 use \ArrayAccess;
 
-/**
- *
- * @author
- * the idea is that the module class will
- * spill out different instances of class which holds
- * the query results and it's associations
- *
- * all operations are statically called, search, save and delete
- * we pass minimum parameters to pass is $data, $schema, $dbobject
- */
+
 class Model extends Base implements ArrayAccess, IteratorAggregate
 {
 
