@@ -15,14 +15,7 @@
  *
  * @author Qen Empaces
  * @email qen.empaces@gmail.com
- * @version rc7
  * @date 2010.10.19
- *
- * MODIFICATION DONE ON TWIG
- *
- * Twig_Template->getAttributes
- * Twig_Node_Block->compile
- *
  *
  */
 namespace Core;

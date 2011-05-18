@@ -15,13 +15,14 @@
  *
  * @author Qen Empaces
  * @email qen.empaces@gmail.com
- * @version rc7
+ * @version v0.05.18b
  * @date 2010.10.19
  *
  */
 namespace Core {
 
-    const PATH = __DIR__;
+    const PATH      = __DIR__;
+    const VERSION   = 'v0.51.8b';
 
     include 'class/base.php';
     include 'class/config.php';
@@ -375,9 +376,9 @@ namespace Core\App {
                 http_status(404, 'The page reserve method that you have requested could not be found.');
 
             /**
-             * method must not start with _
+             * method must not start with _ or do
              */
-            if ($method{0} == '_')
+            if (preg_match('/^(_|do).*/', $method))
                 http_status(404, 'The page name method that you have requested could not be found.');
 
             $response = new \ReflectionMethod(static::$Controller, $method);
@@ -402,7 +403,12 @@ namespace Core\App {
 
             $controller_klass::$Method = $method;
 
-            if (!$response->isFinal()) {
+            $method_doc_options = $response->getDocComment();
+            /**
+             * if @method :greedy comment DOES NOT EXISTS 
+             */
+            //if (!$response->isFinal()) {
+            if (!preg_match('/(@method).+(:greedy)/i', $method_doc_options)) {
                 /**
                  * count the number of params that is not empty
                  */
@@ -438,12 +444,11 @@ namespace Core\App {
              * @param :allow_file_extensions
              */
             if (self::$Param['allow_file_extensions'] !== true && !empty(self::$Pathinfo['extension'])) {
-                $doc = $response->getDocComment();
 
                 /**
                  * if @param :allow_file_extensions comment DOES NOT EXISTS return 404 page
                  */
-                if (!preg_match('/(@param).+(:allow_file_extensions)/i', $doc))
+                if (!preg_match('/(@param).+(:allow_file_extensions)/i', $method_doc_options))
                     http_status(404, 'The page file extension that you have requested could not be found.');
 
                 /**

@@ -15,7 +15,6 @@
  *
  * @author Qen Empaces
  * @email qen.empaces@gmail.com
- * @version rc7
  * @date 2010.10.19
  *
  * CONVENTIONS
@@ -183,28 +182,28 @@ class Model extends Base implements ArrayAccess, IteratorAggregate
         }//end if
 
         if (is_string($offset) && $this->offsetExists($offset)) {
-            /**
-             * sanitize bit value
-             */
-            $retval = array(
-                "{$offset}" => $this->results[$idx][$offset]
-            );
-
-            $schema = $this->schema['self']['fields'];
-            $is_bit = ('bit' == $schema[$offset]) ? true : false;
-            if ($is_bit === false && !empty($this->schema['parent'])) {
-                $schema = $this->schema['parent']['fields'];
-                $is_bit = ('bit' == $schema[$offset]) ? true : false;
-            }//end if
-            
-            if ($is_bit) $retval = Tools::Sanitize($retval, $schema, false);
-                
-            return $retval[$offset];
+            return $this->results[$idx][$offset];
+//            /**
+//             * sanitize bit value
+//             */
+//            $retval = array(
+//                "{$offset}" => $this->results[$idx][$offset]
+//            );
+//
+//            $schema = $this->schema['self']['fields'];
+//            $is_bit = ('bit' == $schema[$offset]) ? true : false;
+//            if ($is_bit === false && !empty($this->schema['parent'])) {
+//                $schema = $this->schema['parent']['fields'];
+//                $is_bit = ('bit' == $schema[$offset]) ? true : false;
+//            }//end if
+//
+//            if ($is_bit) $retval = Tools::Sanitize($retval, $schema, false);
+//
+//            return $retval[$offset];
         }//end if
 
-        if ($this->offsetExists($offset)) {
+        if ($this->offsetExists($offset)) 
             return $this->results[$offset];
-        }//end if
 
         return null;
     }
@@ -212,13 +211,32 @@ class Model extends Base implements ArrayAccess, IteratorAggregate
     public function offsetSet($offset, $value)
     {
 
-        if (!@array_key_exists($offset, $this->schema['self']['fields'])
-            && !@array_key_exists($offset, $this->schema['parent']['fields'])
-            ) return false;
+        $schema = null;
+        /**
+         * check if exists on self schema
+         */
+        if (@array_key_exists($offset, $this->schema['self']['fields']))
+            $schema = $this->schema['self'];
+
+        /**
+         * check if exists on parent
+         */
+        if (is_null($schema) && @array_key_exists($offset, $this->schema['parent']['fields']))
+            $schema = $this->schema['parent'];
+
+        /**
+         * still null return false
+         */
+        if (is_null($schema))
+            return false;
+
+        $raw = array();
+        $raw[$offset] = $value;
+        $raw = Tools::Sanitize($raw, $schema['fields']);
 
         $idx = $this->iterator->key();
         $this->ismodified = true;
-        $this->results[$idx][$offset] = $value;
+        $this->results[$idx][$offset] = $raw[$offset];
     }
 
     public function offsetUnset($offset)
@@ -914,13 +932,15 @@ class Model extends Base implements ArrayAccess, IteratorAggregate
 
         /**
          * data might have change during the validate call
+         * 
          */
         $data = $this();
 
         /**
          * sanitize data here
+         * - data sanitization is moved on offsetSet
          */
-        $data = Tools::Sanitize($data, $schema['fields']);
+        //$data = Tools::Sanitize($data, $schema['fields']);
 
         /**
          * prepare to write the data to db
@@ -1642,6 +1662,7 @@ class Model extends Base implements ArrayAccess, IteratorAggregate
             'count'         => false,
             'columns'       => array(),
             'join'          => array(),
+            'custom_field'  => static::$Custom_Field
         );
 
 		extract($find_options, EXTR_SKIP);
@@ -1680,8 +1701,8 @@ class Model extends Base implements ArrayAccess, IteratorAggregate
         $find = Tools::ArrayMerge($conditions, $where);
         $table_fields = array_keys($schema['fields']);
 
-        if (!empty(static::$Custom_Field)) {
-            foreach (static::$Custom_Field as $k => $v) 
+        if (!empty($custom_field)) {
+            foreach ($custom_field as $k => $v)
                 $table_fields[] = $k;
         }//end if
 
@@ -1763,8 +1784,8 @@ class Model extends Base implements ArrayAccess, IteratorAggregate
             
         }//end if
 
-        if (!empty(static::$Custom_Field)) {
-            foreach (static::$Custom_Field as $k => $v) 
+        if (!empty($custom_field)) {
+            foreach ($custom_field as $k => $v)
                 $cols[] = "{$v} as {$k}";
         }//end if
 

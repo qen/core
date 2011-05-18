@@ -151,7 +151,6 @@ $data = <<<EOF
  *
  * @author Qen Empaces
  * @email qen.empaces@gmail.com
- * @version rc7
  * @date 2011.05.11
  *
  */
