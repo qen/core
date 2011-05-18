@@ -148,11 +148,6 @@ $data = <<<EOF
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
  * Lesser General Public License for more details.
  *
- *
- * @author Qen Empaces
- * @email qen.empaces@gmail.com
- * @date 2011.05.11
- *
  */
 
 namespace Core\App;
