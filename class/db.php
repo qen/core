@@ -129,7 +129,7 @@ class Db
         
         if ($key === false) {
             $name   = str_replace('.', '_', $name);
-            $key    = ":{$name}_" . substr(md5(time().$value.count(self::$bindvars)), 0, 8);
+            $key    = ":{$name}_" . substr(md5(time().$value.count(self::$bindvars).$name), 0, 18);
             self::$bindvars[$key] = $value;
         }//end if
         
