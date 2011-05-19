@@ -33,7 +33,8 @@ class Twig_Extension_CoreApp extends Twig_Extension
 
     public function getTests() {
         return array(
-            'email' => new Twig_Test_Function('twig_test_email')
+            'email' => new Twig_Test_Function('twig_test_email'),
+            'blank' => new Twig_Test_Function('twig_test_blank'),
         );
     }
 
@@ -133,4 +134,8 @@ function twig_hyphenate_filter($var) {
 
 function twig_url_decode_filter($var) {
     return urldecode($var);
+}
+
+function twig_test_blank($value){
+    return empty($value);
 }
