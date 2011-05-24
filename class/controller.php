@@ -45,6 +45,8 @@ class Controller implements ArrayAccess
     private $datasessions   = array('@session', '@flash', '@notify');
     private $class          = '';
 
+    private $session_name   = 'sid';
+
     /**
      * @todo settings use for post/get, do data validate or sanitize
      */
@@ -96,8 +98,13 @@ class Controller implements ArrayAccess
                 $sid = \session_id();
                 if (empty($sid)) {
 
-                    if (is_string($value) && !empty($value))
-                        \session_name($value);
+                    if (is_string($value) && !empty($value)){
+                        $this->session_name = $value;
+                        \session_name($this->session_name);
+                    }else{
+                        $this->session_name = 'sid';
+                        \session_name($this->session_name);
+                    }//endif
 
                     \session_start();
 
@@ -233,11 +240,12 @@ class Controller implements ArrayAccess
                 break;
             
             case 'dump':
+                header('Content-type: text/plain');
                 while (@ob_end_flush());
                 $trace = debug_backtrace();
                 $caller = $trace[0];
                 var_export($value);
-                echo "\n<br>";
+                echo "\n";
                 var_export("{$caller['file']} @line {$caller['line']}");
                 exit;
                 break;
@@ -344,6 +352,10 @@ class Controller implements ArrayAccess
                 break;
 
             case '@cookie':
+
+                if ($this->session_name == $offset) 
+                    throw new Exception("Cookie name {$offset} can't be the same as session name {$this->session_name}");
+
                 $cuky_name  = $offset;
                 $cuky_value = $value;
                 $config     = $this->options['@cookie'];
@@ -355,7 +367,7 @@ class Controller implements ArrayAccess
                     $expire = 1;
 
                 if (empty($path))
-                    $config['path'] = Path::Uri('root');
+                    $config['path'] = Path::Uri('root').'/';
 
                 $config['expire'] = time() + (3600 * $expire);
                 if (is_null($cuky_value))
@@ -364,6 +376,7 @@ class Controller implements ArrayAccess
                     $cuky_value = Tools::Hash($cuky_value, array('mode' => 'encode'));
 
                 $_COOKIE[$cuky_name] = $cuky_value;
+                $this('logger', array('setcookie', $cuky_name, $cuky_value, $config['expire'], $config['path']));
                 setcookie($cuky_name, $cuky_value, $config['expire'], $config['path']);
                 break;
 

@@ -386,15 +386,6 @@ namespace Core\App {
             if (!$response->isPublic())
                 http_status(404);
 
-            /**
-             * check if is not method is geedy
-             *
-             * method is greedy if its a final function
-             * ie:
-             * public final function index() // greedy
-             * public function index($param, $param=0) // not greedy
-             *
-             */
             $count['required'] = $response->getNumberOfRequiredParameters();
             $count['expected'] = $response->getNumberOfParameters();
             $count['optional'] = $count['expected'] - $count['required'];
@@ -404,10 +395,13 @@ namespace Core\App {
             $controller_klass::$Method = $method;
 
             $method_doc_options = $response->getDocComment();
+            
             /**
-             * if @method :greedy comment DOES NOT EXISTS 
+             * method is greedy if the doc comment @method :greedy
+             *
+             * if @method :greedy comment DOES NOT EXISTS
+             * 
              */
-            //if (!$response->isFinal()) {
             if (!preg_match('/(@method).+(:greedy)/i', $method_doc_options)) {
                 /**
                  * count the number of params that is not empty
