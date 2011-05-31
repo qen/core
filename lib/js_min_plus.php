@@ -1,5 +1,4 @@
 <?php
-
 /**
  * JSMinPlus version 1.3
  *

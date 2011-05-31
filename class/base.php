@@ -1,21 +1,26 @@
 <?php
 /**
- * Project:     CORE FRAMEWORK
+ * Project: PHP CORE Framework
  *
- * This library is free software; you can redistribute it and/or
- * modify it under the terms of the GNU Lesser General Public
- * License as published by the Free Software Foundation; either
- * version 2.1 of the License, or (at your option) any later version.
+ * This file is part of PHP CORE Framework.
  *
- * This library is distributed in the hope that it will be useful,
+ * PHP CORE Framework is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or (at your option) any later version.
+ *
+ * PHP CORE Framework is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
- * Lesser General Public License for more details.
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
  *
+ * You should have received a copy of the GNU General Public License
+ * along with PHP CORE Framework.  If not, see <http://www.gnu.org/licenses/>.
  *
- * @author Qen Empaces
+ * @version v0.05.18b
+ * @copyright 2010-2011
+ * @author Qen Empaces,
  * @email qen.empaces@gmail.com
- * @date 2010.10.19
+ * @date 2011.05.30
  *
  */
 namespace Core;
@@ -36,7 +41,7 @@ class Base {
     private $stored = array();
     private $events = array();
 
-    public final function __construct()
+    public function __construct()
     {
         $this->class        = get_class($this);
         $this->respondto    = self::$respondto_classes[$this->class];
