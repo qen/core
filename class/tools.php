@@ -195,7 +195,7 @@ class Tools {
                 }//end if
                 
                 $rtn = preg_match("|{$regex}|i",$field[$k]);
-                if ($rtn == 0) $err[] = $msg;
+                if ($rtn === false) $err[] = $msg;
 
             }//endfor
         }#end if
@@ -264,7 +264,9 @@ class Tools {
 
         if (count($err) == 0) return true;
 
-        throw new Exception($err);
+        $exc = new Exception($err);
+        $exc->traceup();
+        throw $exc;
 
         return false;
       }//end function

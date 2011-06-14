@@ -182,6 +182,8 @@ namespace Core\App;
 
 use Core\Db;
 use Core\View;
+use Core\Controller;
+use Core\ModelActions;
 
 ##############################################################
 # do not touch this not unless you know what you are doin
@@ -215,8 +217,10 @@ include 'lib/session_handler.php';
  * for development purposes
  */
 error_reporting(E_ALL ^ E_NOTICE);
-Db::\$Debug     = false; // set to true to dump all sql statement in messages.log
-View::\$Debug   = false; // set to true to dump stuff in messages.log
+Db::\$Debug             = false; // set to true to dump all sql statement to db.log
+View::\$Debug           = true; // set to true to dump stuff to messages.log
+Controller::\$Debug     = false; // set to true to echo echo to messages.log
+ModelActions::\$Debug   = false; // set to true to dump debug to stuff on model_actions.log
 
 Route::Request();
 
@@ -366,7 +370,7 @@ if (!is_file("{$coredir}/config/{$app['env']}.php")) {
 return <<<CONFIG_JSON
 {
     "db" : {
-        "dsn"       : "mysql:dbname=[dbname];host=[host]",
+        "dsn"       : "mysql:dbname=[dbname];host=[host];charset=utf8",
         "usr"       : "[usr]",
         "pwd"       : "[password]",
         "schemas"   : {

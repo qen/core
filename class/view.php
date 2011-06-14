@@ -217,7 +217,7 @@ class View
         $engine->loadTemplate(self::$Template)->display(self::$Assignments);
 
         if (self::$Debug) 
-            App\logger(array($uri, self::$Template, $template_assumptions, $verbose), __CLASS__);
+            logger(array($uri, self::$Template, $template_assumptions, $verbose), $_SERVER['REQUEST_URI']);
 
     }
 

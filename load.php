@@ -26,7 +26,7 @@
 namespace Core {
 
     const PATH      = __DIR__;
-    const VERSION   = 'v0.51.8b';
+    const VERSION   = '0.05.18b';
 
     include 'class/base.php';
     include 'class/config.php';
@@ -36,8 +36,17 @@ namespace Core {
     include 'class/tools.php';
     include 'class/view.php';
     include 'class/model.php';
+    include 'class/model_actions.php';
     include 'class/db.php';
 
+    function logger($value, $title = '', $file = 'messages.log')
+    {
+        $logfile    = App\Path::TempDir('').'/'.$file;
+        $datetime   = date("Y-m-d H:i:s");
+        $dump       = var_export($value, true);
+        error_log("\n[{$datetime}] {$title}\n{$dump}\n", 3, $logfile);
+    }
+    
 }// end namespace
 
 namespace Core\App {
@@ -46,7 +55,7 @@ namespace Core\App {
     use Core\Debug;
     use Core\View;
     use Core\Tools;
-
+    
     class Config extends \Core\Config
     {
 
@@ -69,7 +78,6 @@ namespace Core\App {
     {
 
         private static $klass   = array();
-        private static $conf    = array();
 
         public static function __callStatic($module, array $params = array())
         {
@@ -96,46 +104,12 @@ namespace Core\App {
             
             $nsmodule = '\\Core\\App\\Modules\\' . $module . '\\' . $klass;
 
-            if (!isset(self::$klass[$nsmodule])) {
-                self::$klass[$nsmodule] = new $nsmodule;
-                self::$klass[$nsmodule]->config(self::loadConfiguration($module));
-            }//end if
-            
-            $retval = clone self::$klass[$nsmodule];
-            return $retval;
-        }
+//            if (!isset(self::$klass[$nsmodule])) {
+//                self::$klass[$nsmodule] = new $nsmodule(Config::Db());
+//            }
+//            $retval = clone self::$klass[$nsmodule];
 
-        private static function loadConfiguration($module)
-        {
-            if (isset(self::$conf[$module]))
-                return self::$conf[$module];
-
-            $config = new \Core\Config;
-
-            $load = 'modules/'.$module.'/config/default.php';
-
-            /**
-             * load some default config into the module config
-             */
-            $config->mutate(array(
-                'db' => Config::Db()
-            ));
-
-            /**
-             * then load the actual module config
-             */
-            $config->import($load);
-
-            /**
-             * load environment config file
-             */
-            $env    = \Core\App\ENVIRONMENT;
-            $load   = 'modules/'.$module.'/config/'.$env.'.php';
-            $config->import($env);
-
-            self::$conf[$module] = $config;
-            
-            return $config;
+            return new $nsmodule(Config::Db());;
         }
 
     }
@@ -478,9 +452,13 @@ namespace Core\App {
              */
             static::$Controller->doFinalizeController();
 
-            $debugbuffer = ob_get_contents();
-            if (!empty($debugbuffer)) {
-                self::$Debug .= "\n<!-- {$controller_klass} --\n{$debugbuffer}\n-- {$controller_klass} -->\n";
+            /**
+             * check if controller debug is true
+             */
+            if (\Core\Controller::$Debug === true) {
+                $debugbuffer = ob_get_contents();
+                $debugbuffer = "\n{$controller_klass} --\n{$debugbuffer}\n-- {$controller_klass}\n";
+                \Core\logger($debugbuffer, implode('/', Path::$Uri['path']));
             }//end if
 
             /**
@@ -525,7 +503,6 @@ namespace Core\App {
              * call parse template here
              */
             static::$View->response($method);
-            echo self::$Debug;
 
             $self('flash_expire', 'notify');
             
@@ -565,15 +542,6 @@ namespace Core\App {
     /**
      * app functions
      */
-
-    function logger($value, $title = '', $file = 'messages.log')
-    {
-        $logfile    = Path::TempDir('').'/'.$file;
-        $datetime   = date("Y-m-d H:i:s");
-        $dump       = var_export($value, true);
-        error_log("\n[{$datetime}] {$title}\n{$dump}\n", 3, $logfile);
-    }
-
     function redirect($arg = '', array $get=array())
     {
         $path = $arg;
@@ -780,7 +748,7 @@ namespace Core\App {
     set_error_handler(function($errno, $errstr, $errfile, $errline){
         if ($errno & (\E_NOTICE ^ \E_WARNING ^ E_STRICT) ) return true;
 
-        logger("[{$datetime}]Error {$errno} | {$errfile} @line {$errline}\n{$errstr}\n\n", 'PHP :: set_error_handler', 'error.log');
+        \Core\logger("[{$datetime}]Error {$errno} | {$errfile} @line {$errline}\n{$errstr}\n\n", 'PHP :: set_error_handler', 'error.log');
         return true;
     });
     

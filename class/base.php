@@ -221,7 +221,10 @@ class Base {
         if (!empty($this->extended['parent']))
             return $this->extended['parent']->call($method, $args);
 
-        throw new Exception($this->class."> failed to call '{$method}', does not exists.");
+        $exc = new Exception($this->class."> failed to call '{$method}', does not exists.");
+        $exc->traceup();
+        $exc->traceup();
+        throw $exc;
     }// end function 
 
     /**
@@ -378,9 +381,11 @@ class Base {
         if (empty($this->events[$name])) return false;
 
         $retval = null;
-        foreach ($this->events[$name] as $k => $func)
-            $retval = call_user_func_array($func, $args);
-
+        foreach ($this->events[$name] as $k => $func) {
+            $val = call_user_func_array($func, $args);
+            if (!empty($val)) $retval = $val;
+        }//foreach
+        
         return $retval;
     }
 }
