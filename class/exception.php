@@ -34,17 +34,18 @@ namespace Core;
 class Exception extends \Exception
 {
 
-    private $details = array();
+    private $details    = array();
+    private $traceindex = -1;
 
     /**
      * Constructor
      * @access protected
      */
-    function __construct($messages, $code = 0) {
+    public function __construct($messages, $code = 0) {
         // some code
         if (is_array($messages))
             $messages = implode(";", $messages);
-
+        
         // make sure everything is assigned properly
         parent::__construct($messages, $code);
 
@@ -52,7 +53,7 @@ class Exception extends \Exception
 
     // custom string representation of object
     public function __toString() {
-        return __CLASS__ . ": [{$this->code}]: {$this->message}\n";
+        return $this->message;
     }
 
     /**
@@ -96,5 +97,20 @@ class Exception extends \Exception
     {
         return $this->details;
     }// end function
+
+    /**
+     *
+     * @access
+     * @var
+     */
+    public function traceup()
+    {
+        $trace = $this->getTrace();
+        $this->traceindex = $this->traceindex + 1;
+        $this->file = $trace[$this->traceindex]['file'];
+        $this->line = $trace[$this->traceindex]['line'];
+
+        return $this;
+    }
 
 }

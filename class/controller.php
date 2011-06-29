@@ -42,7 +42,8 @@ use Core\App\Config as AppConfig;
 //class Controller //extends Base
 class Controller implements ArrayAccess
 {
-
+    public static $Debug = false;
+    
     public static $Method    = null;
 
     private $datasource     = '';
@@ -142,9 +143,9 @@ class Controller implements ArrayAccess
                         if (empty($v)) continue;
 
                         if (!array_key_exists($k)) {
-                            $trace = debug_backtrace();
-                            $caller = $trace[0];
-                            throw new Exception("{$k} not recognized as option, available is (attachment, nocache, type) | {$caller['file']} @line {$caller['line']}");
+                            $exc = new Exception("{$k} not recognized as option, available is (attachment, nocache, type)");
+                            $exc->traceup();
+                            throw $exc;
                         }//end if
 
                         $config[$k] = $v;
@@ -249,7 +250,8 @@ class Controller implements ArrayAccess
                 while (@ob_end_flush());
                 $trace = debug_backtrace();
                 $caller = $trace[0];
-                var_export($value);
+                $args = func_get_args();
+                var_export($args);
                 echo "\n";
                 var_export("{$caller['file']} @line {$caller['line']}");
                 exit;
@@ -258,7 +260,7 @@ class Controller implements ArrayAccess
             case 'logger':
                 $trace = debug_backtrace();
                 $caller = $trace[0];
-                App\logger(array("{$caller['file']} @line {$caller['line']}", $value), $this->class);
+                logger(array("{$caller['file']} @line {$caller['line']}", $value), $this->class);
                 break;
 
             case 'flash_expire':
@@ -291,23 +293,10 @@ class Controller implements ArrayAccess
                 return true;
                 break;
 
-            case 'numpage':
-                $get        = $this['@get.*'];
-                $numpage    = $value;
-                $href       = '';
-
-                unset($get['p']);
-                foreach ($get as $k => $v) $href .= "{$k}={$v}&";
-                
-                $numpage['href'] = "?{$href}p=";
-                $this['numpage'] = $numpage;
-                return $numpage;
-                break;
-
             default:
-                $trace = debug_backtrace();
-                $caller = $trace[0];
-                throw new Exception("Controller function {$name} is not recognized | {$caller['file']} @line {$caller['line']}");
+                $exc = new Exception("Controller function {$name} is not recognized");
+                $exc->traceup();
+                throw $exc;
                 break;
         }// end switch
 
@@ -327,9 +316,11 @@ class Controller implements ArrayAccess
 
         if (!empty($this->datasource) && in_array($this->datasource, $this->datasessions)) {
             $sid = $this('session');
-            if (empty($sid))
-                throw new Exception('Please initialize controller session, $self("session")');
-            
+            if (empty($sid)){
+                $exc = new Exception('Please initialize controller session, $self("session")');
+                $exc->traceup();
+                throw $exc;
+            }//end if
         }//end if
         
         $datasource = $this->datasource;
@@ -371,9 +362,12 @@ class Controller implements ArrayAccess
 
             case '@cookie':
 
-                if ($this->session_name == $offset) 
-                    throw new Exception("Cookie name {$offset} can't be the same as session name {$this->session_name}");
-
+                if ($this->session_name == $offset) {
+                    $exc = new Exception("Cookie name {$offset} can't be the same as session name {$this->session_name}");
+                    $exc->traceup();
+                    throw $exc;
+                }//end if
+                
                 $cuky_name  = $offset;
                 $cuky_value = $value;
                 $config     = $this->options['@cookie'];
@@ -432,18 +426,22 @@ class Controller implements ArrayAccess
                     break;
                 }//end if
 
-                $trace = debug_backtrace();
-                $caller = $trace[0];
-                
-                throw new Exception("Valid offset for @template is render and default | {$caller['file']} @line {$caller['line']}");
+                $exc = new Exception("Valid offset for @template is render and default");
+                $exc->traceup();
+                throw $exc;
                 break;
                 
             default:
                 /**
                  * core model integration
                  */
-                if ($value instanceof \Core\Model)
-                    $this('numpage', $value->numpage);
+                if ($value instanceof \Core\Model) {
+                    $get        = $this['@get.*'];
+                    $href       = '';
+                    unset($get['p']);
+                    foreach ($get as $k => $v) $href .= "{$k}={$v}&";
+                    $value->numpage['href'] = "?{$href}p=";
+                }//end if
 
                 View::Assign($offset, $value);
                 break;

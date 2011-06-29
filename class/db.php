@@ -38,7 +38,7 @@ use \PDO;
  */
 class Db
 {
-    public static $Debug = true;
+    public static $Debug = true; // dump to db.log
     /**
      *
      */
@@ -62,7 +62,7 @@ class Db
     /**
      *
      */
-    function __construct($dbconfig) {
+    private function __construct($dbconfig) {
         $this->dsn      = $dbconfig['dsn'];
         $this->config   = $dbconfig;
         
@@ -183,7 +183,7 @@ class Db
         /**
          * execute sql statement here
          */
-        if (self::$Debug) App\logger(array($psql, $params) , __CLASS__);
+        if (self::$Debug) logger(array($psql, $params) , __CLASS__, 'db.log');
         
         $check = $this->rst[$idx]->execute($params);
 
@@ -242,7 +242,7 @@ class Db
             $this->rst[$idx] = $this->cnn->prepare($psql);
         }//end if
 
-        if (self::$Debug) App\logger(array($psql, $params), __CLASS__);
+        if (self::$Debug) logger(array($psql, $params), __CLASS__, 'db.log');
         
         #$count = $this->cnn->exec($sql);
         $result = $this->rst[$idx]->execute($params);
@@ -339,7 +339,7 @@ class Db
             'pkeys'     => $pkeys,
         );
         
-        if (self::$Debug) App\logger($this->schemas[$table], __CLASS__);
+        if (self::$Debug) logger($this->schemas[$table], __CLASS__, 'db.log');
 
         return $this->schemas[$table];
     }

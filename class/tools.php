@@ -264,7 +264,9 @@ class Tools {
 
         if (count($err) == 0) return true;
 
-        throw new Exception($err);
+        $exc = new Exception($err);
+        $exc->traceup();
+        throw $exc;
 
         return false;
       }//end function
