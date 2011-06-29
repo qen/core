@@ -42,8 +42,8 @@ class $klass extends $extend
     public static \$Name            = '$klass';
     public static \$Table_Name      = '';
     public static \$Find_Options    = array();
-    public static \$Custom_Fields   = array();
-    public static \$Sanitize        = array();
+    public static \$Sanitize        = array(
+    );
 
     protected function setup()
     {

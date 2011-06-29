@@ -26,7 +26,7 @@
 namespace Core {
 
     const PATH      = __DIR__;
-    const VERSION   = '0.05.18b';
+    const VERSION   = 'v0.51.8b';
 
     include 'class/base.php';
     include 'class/config.php';
@@ -36,17 +36,8 @@ namespace Core {
     include 'class/tools.php';
     include 'class/view.php';
     include 'class/model.php';
-    include 'class/model_actions.php';
     include 'class/db.php';
 
-    function logger($value, $title = '', $file = 'messages.log')
-    {
-        $logfile    = App\Path::TempDir('').'/'.$file;
-        $datetime   = date("Y-m-d H:i:s");
-        $dump       = var_export($value, true);
-        error_log("\n[{$datetime}] {$title}\n{$dump}\n", 3, $logfile);
-    }
-    
 }// end namespace
 
 namespace Core\App {
@@ -55,7 +46,7 @@ namespace Core\App {
     use Core\Debug;
     use Core\View;
     use Core\Tools;
-    
+
     class Config extends \Core\Config
     {
 
@@ -78,6 +69,7 @@ namespace Core\App {
     {
 
         private static $klass   = array();
+        private static $conf    = array();
 
         public static function __callStatic($module, array $params = array())
         {
@@ -104,12 +96,46 @@ namespace Core\App {
             
             $nsmodule = '\\Core\\App\\Modules\\' . $module . '\\' . $klass;
 
-//            if (!isset(self::$klass[$nsmodule])) {
-//                self::$klass[$nsmodule] = new $nsmodule(Config::Db());
-//            }
-//            $retval = clone self::$klass[$nsmodule];
+            if (!isset(self::$klass[$nsmodule])) {
+                self::$klass[$nsmodule] = new $nsmodule;
+                self::$klass[$nsmodule]->config(self::loadConfiguration($module));
+            }//end if
+            
+            $retval = clone self::$klass[$nsmodule];
+            return $retval;
+        }
 
-            return new $nsmodule(Config::Db());;
+        private static function loadConfiguration($module)
+        {
+            if (isset(self::$conf[$module]))
+                return self::$conf[$module];
+
+            $config = new \Core\Config;
+
+            $load = 'modules/'.$module.'/config/default.php';
+
+            /**
+             * load some default config into the module config
+             */
+            $config->mutate(array(
+                'db' => Config::Db()
+            ));
+
+            /**
+             * then load the actual module config
+             */
+            $config->import($load);
+
+            /**
+             * load environment config file
+             */
+            $env    = \Core\App\ENVIRONMENT;
+            $load   = 'modules/'.$module.'/config/'.$env.'.php';
+            $config->import($env);
+
+            self::$conf[$module] = $config;
+            
+            return $config;
         }
 
     }
@@ -280,29 +306,32 @@ namespace Core\App {
                 $checkprefix    = '';
                 array_shift($params);
 
-                if (defined('\Core\App\CONTROLLER')){
+                if (defined('\Core\App\CONTROLLER')) {
                     preg_match_all('/([A-Z][a-z0-9]+)/', \Core\App\CONTROLLER, $matches);
                     $checkprefix = strtolower(implode("_", $matches[1])).'/';
                 }//end if
                 
                 $loop   = count($params);
                 $klass  = array();
-
-                for($i = 1; $i <= $loop; $i++ ){
+                $klass_ = 0;
+                for($i = 1; $i <= $loop; $i++ ) {
                     $sliced_klass   = array_slice($params, 0, $i);
                     
                     $check          = implode("_", $sliced_klass);
+                    $check          = str_replace('-', '_', $check);
                     $filename       = Path::ControllerDir() . "/{$checkprefix}{$check}.php";
                     
-                    if (is_file($filename)) 
-                        $klass  = $sliced_klass;
+                    if (is_file($filename)) {
+                        $klass  = explode('_', $check);
+                        $klass_ = count($sliced_klass);
+                        Path::$Uri['path'] = Path::$Uri['root']. '/' . implode("/", $sliced_klass);
+                    }//end if
+
                 }//end for
                 
-                $params = array_slice($params, count($klass));
+                $params = array_slice($params, $klass_);
+                unset($klass_);
 
-                if (!empty($klass))
-                    Path::$Uri['path'] = Path::$Uri['root']. '/' . implode("/", $klass);
-                
                 Path::$Uri['params']    = '/' . implode("/", $params);
                 Path::$Uri['full']      = $_SERVER['REQUEST_URI'];
 
@@ -316,7 +345,7 @@ namespace Core\App {
                 array_walk($klass, function($name) use (&$controller_klass) {
                         $controller_klass .= ucfirst($name);
                     });
-
+                
                 if (empty($controller_klass))
                     throw new Exception('critical error: failed to retrieve controller class');
 
@@ -359,6 +388,11 @@ namespace Core\App {
             if (preg_match('/^(_|do).*/', $method))
                 http_status(404, 'The page name method that you have requested could not be found.');
 
+            /**
+             * for method name, replace - to underscore
+             */
+            $method = str_replace('-', '_', $method);
+            
             $response = new \ReflectionMethod(static::$Controller, $method);
 
             if (!$response->isPublic())
@@ -373,7 +407,7 @@ namespace Core\App {
             $controller_klass::$Method = $method;
 
             $method_doc_options = $response->getDocComment();
-            
+
             /**
              * method is greedy if the doc comment @method :greedy
              *
@@ -452,13 +486,9 @@ namespace Core\App {
              */
             static::$Controller->doFinalizeController();
 
-            /**
-             * check if controller debug is true
-             */
-            if (\Core\Controller::$Debug === true) {
-                $debugbuffer = ob_get_contents();
-                $debugbuffer = "\n{$controller_klass} --\n{$debugbuffer}\n-- {$controller_klass}\n";
-                \Core\logger($debugbuffer, implode('/', Path::$Uri['path']));
+            $debugbuffer = ob_get_contents();
+            if (!empty($debugbuffer)) {
+                self::$Debug .= "\n<!-- {$controller_klass} --\n{$debugbuffer}\n-- {$controller_klass} -->\n";
             }//end if
 
             /**
@@ -503,6 +533,7 @@ namespace Core\App {
              * call parse template here
              */
             static::$View->response($method);
+            echo self::$Debug;
 
             $self('flash_expire', 'notify');
             
@@ -542,6 +573,15 @@ namespace Core\App {
     /**
      * app functions
      */
+
+    function logger($value, $title = '', $file = 'messages.log')
+    {
+        $logfile    = Path::TempDir('').'/'.$file;
+        $datetime   = date("Y-m-d H:i:s");
+        $dump       = var_export($value, true);
+        error_log("\n[{$datetime}] {$title}\n{$dump}\n", 3, $logfile);
+    }
+
     function redirect($arg = '', array $get=array())
     {
         $path = $arg;
@@ -581,15 +621,9 @@ namespace Core\App {
 
     function http_status($code,  $arg = 'The page that you have requested could not be found.')
     {
-        $exit_text = '';
-        if ($code == 404){
-            $code       = '404 Not Found';
-            $exit_text  = '<h1>404 Not Found</h1>'.$arg;
-            while (@ob_end_clean());
-        }//end if
+        if ($code != 200) while (@ob_end_clean());
 
         if ($code == 301) {
-            while (@ob_end_clean());
             @header("HTTP/1.1 301 Moved Permanently");
             redirect($arg);
         }//end if
@@ -601,8 +635,20 @@ namespace Core\App {
          */
         while (@ob_end_flush());
 
-        @header("HTTP/1.1 ".$code);
-        echo $exit_text;
+        switch ($code) {
+            case 404:
+                @header("HTTP/1.1 404 Not Found");
+                View::ErrorPage(404, $arg);
+                break;
+
+            case 500:
+                @header("HTTP/1.1 500 Internal Server Error");
+                View::ErrorPage(500, $arg);
+                break;
+
+            default:
+                break;
+        }// end switch
         exit;
     }
 
@@ -748,7 +794,7 @@ namespace Core\App {
     set_error_handler(function($errno, $errstr, $errfile, $errline){
         if ($errno & (\E_NOTICE ^ \E_WARNING ^ E_STRICT) ) return true;
 
-        \Core\logger("[{$datetime}]Error {$errno} | {$errfile} @line {$errline}\n{$errstr}\n\n", 'PHP :: set_error_handler', 'error.log');
+        logger("[{$datetime}]Error {$errno} | {$errfile} @line {$errline}\n{$errstr}\n\n", 'PHP :: set_error_handler', 'error.log');
         return true;
     });
     

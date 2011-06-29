@@ -217,8 +217,36 @@ class View
         $engine->loadTemplate(self::$Template)->display(self::$Assignments);
 
         if (self::$Debug) 
-            logger(array($uri, self::$Template, $template_assumptions, $verbose), $_SERVER['REQUEST_URI']);
+            App\logger(array($uri, self::$Template, $template_assumptions, $verbose), __CLASS__);
 
+    }
+
+    public function ErrorPage($code, $echo)
+    {
+        $default = array(
+            'strict_variables'  => false,
+            'auto_reload'       => true,
+            'debug'             => true,
+        );
+
+        $config = AppConfig::Twig();
+
+        if (!is_array($config))
+            $config = array();
+
+        $config = Tools::ArrayMerge($default, $config);
+        $config['cache'] = Path::TempDir('tpl');
+
+        $loader     = new \Twig_Loader_CoreAppFilesystem(Path::ViewDir(), \Core\App\PATH);
+        $template   = "{$code}.html";
+        try {
+            $loader->isFresh($template, 0);
+            $engine = new \Twig_EnvironmentCoreApp($loader, $config);
+            self::$Assignments['ErrorPageMessage'] = $echo;
+            $engine->loadTemplate($template)->display(self::$Assignments);
+        } catch (\Exception $exc) {
+            echo "<h1>{$code} Page Error</h1>{$echo}";
+        }//end try
     }
 
 }
