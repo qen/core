@@ -1,19 +1,67 @@
 <?php
-
-/*
- * This file is part of Twig.
+/**
+ * Project: PHP CORE Framework
  *
- * (c) 2009 Fabien Potencier
+ * This file is part of PHP CORE Framework.
  *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
+ * PHP CORE Framework is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or (at your option) any later version.
+ *
+ * PHP CORE Framework is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with PHP CORE Framework.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ * @version v0.05.18b
+ * @copyright 2010-2011
+ * @author Qen Empaces,
+ * @email qen.empaces@gmail.com
+ * @date 2011.05.30
+ *
  */
+
+use Core\App\Path;
+use Core\Tools;
+use Core\View;
+
 class Twig_Extension_CoreApp extends Twig_Extension
 {
 
+    public function __call($name, $args) {
+
+        if (preg_match('/^helper_function_([a-z0-9_]+)/i', $name)) {
+            list(,,$func) = explode("_", $name, 3);
+
+            if (!array_key_exists($func, View::$Functions)) {
+                $exc = new Exception("{$func} is not a valid view_helper_function");
+                throw $exc;
+            }//end if
+            
+            $func = View::$Functions[$func];
+            return call_user_func_array($func, $args);
+        }
+
+        if (preg_match('/^helper_filter_([a-z0-9_]+)/i', $name)) {
+            list(,,$func) = explode("_", $name, 3);
+
+            if (!array_key_exists($func, View::$Filters)) {
+                $exc = new Exception("{$func} is not a valid view_helper_filter");
+                throw $exc;
+            }//end if
+
+            $func = View::$Filters[$func];
+            return call_user_func_array($func, $args);
+        }
+        
+        return null;
+    }
+    
     /**
      * Returns a list of filters to add to the existing list.
-     *
      * @return array An array of filters
      */
     public function getFilters()
@@ -28,13 +76,35 @@ class Twig_Extension_CoreApp extends Twig_Extension
             'url_decode' => new Twig_Filter_Function('twig_url_decode_filter'),
         );
 
+        if (!empty(View::$Filters)) {
+            foreach (View::$Filters as $k => $v) {
+                if (!is_callable($v) || !preg_match('/[a-z0-9_]+/i', $k)) continue;
+                $filters[$k] = new Twig_Filter_Method($this, "helper_filter_{$k}");
+            }//endforeach
+        }//end if
+
         return $filters;
     }
 
-    public function getTests() {
+    public function getFunctions()
+    {
+        $functions = array();
+
+        if (!empty(View::$Functions)) {
+            foreach (View::$Functions as $k => $v){
+                if (!is_callable($v) || !preg_match('/^[a-z0-9_]+/i', $k)) continue;
+                $functions[$k] = new Twig_Function_Method($this, "helper_function_{$k}");
+            }//end foreach
+        }//end if
+
+        return $functions;
+    }
+
+    public function getTests()
+    {
         return array(
             'email' => new Twig_Test_Function('twig_test_email'),
-            'blank' => new Twig_Test_Function('twig_test_blank'),
+            'blank' => new Twig_Test_Function('twig_test_blank')
         );
     }
 
@@ -88,7 +158,7 @@ function twig_base64_filter($str)
 /**
  * cache jsminify and cssminify
  */
-use Core\App\Path;
+
 function twig_jsminify_filter($str)
 {
     $cssfile    = md5($str);
@@ -127,15 +197,17 @@ function twig_test_email($value)
     return preg_match('/^[a-z0-9_\-\+]+(\.[_a-z0-9\-\+]+)*@([_a-z0-9\-]+\.)+([a-z]{2}|aero|arpa|biz|com|coop|edu|gov|info|int|jobs|mil|museum|name|nato|net|org|pro|travel)$/i', $value);
 }
 
-use Core\Tools;
-function twig_hyphenate_filter($var) {
+function twig_hyphenate_filter($var)
+{
     return Tools::Hyphenate($var);
 }
 
-function twig_url_decode_filter($var) {
+function twig_url_decode_filter($var)
+{
     return urldecode($var);
 }
 
-function twig_test_blank($value){
+function twig_test_blank($value)
+{
     return empty($value);
 }

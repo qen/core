@@ -503,12 +503,10 @@ namespace Core\App {
             $self = static::$Controller;
             $self('flash_expire', 'vars');
 
-            View::Assign('this', $self);
-
             /**
              * call parse template here
              */
-            static::$View->response($method);
+            static::$View->response($self, $method);
 
             $self('flash_expire', 'notify');
             

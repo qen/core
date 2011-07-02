@@ -31,6 +31,8 @@ use Core\App\Config as AppConfig;
 
 class View
 {
+    public static $Filters      = array();
+    public static $Functions    = array();
 
     public static $Debug = true;
 
@@ -42,11 +44,6 @@ class View
     
     private static $Assignments = array();
 
-    /**
-     *
-     * @access
-     * @var
-     */
     public function  __construct()
     {
         if (isset(self::$Instance))
@@ -54,12 +51,7 @@ class View
 
         //self::$engine = new Twig();
     }
-    
-    /**
-     *
-     * @access
-     * @var
-     */
+
     public static function Instance()
     {
         if (!isset(self::$Instance)) {
@@ -77,9 +69,10 @@ class View
      */
     public static function Parse($string, array $assign = array())
     {
-        if (!isset(self::$Parser))
+        if (!isset(self::$Parser)) {
             self::$Parser = new \Twig_EnvironmentCoreApp(new \Twig_Loader_String());
-        
+            
+        }//end if
         return self::$Parser->loadTemplate($string)->render($assign);
     }
 
@@ -97,6 +90,7 @@ class View
             return self::$Assignments[$var];
 
         self::$Assignments[$var] = $value;
+
         return $value;
     }
 
@@ -126,7 +120,7 @@ class View
      * @access :noextend
      * @var
      */
-    public function response($method)
+    public function response(\Core\Controller $self, $method)
     {
         $default = array(
             'strict_variables'  => false,
@@ -141,6 +135,11 @@ class View
 
         $config = Tools::ArrayMerge($default, $config);
         $config['cache'] = Path::TempDir('tpl');
+
+        /**
+         * this is reference from template is the controller object
+         */
+        self::$Assignments['this'] = $self;
 
         /**
          * debug: When set to true, the generated templates have a __toString() method that you can use to display the generated nodes (default to false).
@@ -158,9 +157,10 @@ class View
          * strict_variables (new in Twig 0.9.7): If set to false, Twig will silently ignore invalid variables (variables and or attributes/methods that do not exist) and replace them with a null value. When set to true, Twig throws an exception instead (default to false).
          */
         
-        $loader = new \Twig_Loader_CoreAppFilesystem(Path::ViewDir(), \Core\App\PATH);
-        $engine = new \Twig_EnvironmentCoreApp($loader, $config);
-        $uri    = Path::Uri();
+        $loader     = new \Twig_Loader_CoreAppFilesystem(Path::ViewDir(), \Core\App\PATH);
+        $engine     = new \Twig_EnvironmentCoreApp($loader, $config);
+        
+        $uri        = Path::Uri();
         
         if (empty(self::$Template)) {
             

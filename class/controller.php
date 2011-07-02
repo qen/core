@@ -31,6 +31,7 @@ use Core\App;
 use Core\App\Path;
 use Core\App\Route;
 use Core\App\Config as AppConfig;
+use Core\View;
 
 /**
  *
@@ -74,6 +75,15 @@ class Controller implements ArrayAccess
     {
         $this->class = get_class($this);
     }
+
+    public function &__get($name)
+    {
+        if ($name == 'view_helper_function') return View::$Functions;
+        if ($name == 'view_helper_filter') return View::$Filters;
+
+        return null;
+    }
+
 
     /**
      * app functions goes here
