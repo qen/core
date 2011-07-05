@@ -1,21 +1,34 @@
 <?php
-
-/*
- * This file is part of Twig.
- *
- * (c) 2009 Fabien Potencier
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
 /**
- * Loads template from the filesystem.
+ * Project: PHP CORE Framework
  *
- * @package    twig
- * @author     Fabien Potencier <fabien.potencier@symfony-project.com>
+ * This file is part of PHP CORE Framework.
+ *
+ * PHP CORE Framework is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or (at your option) any later version.
+ *
+ * PHP CORE Framework is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with PHP CORE Framework.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ * @version v0.05.18b
+ * @copyright 2010-2011
+ * @author Qen Empaces,
+ * @email qen.empaces@gmail.com
+ * @date 2011.05.30
+ *
  */
-class Twig_Loader_CoreAppFilesystem implements Twig_LoaderInterface
+namespace Core;
+
+use Core\App;
+use Core\App\Path;
+
+class ViewTwigLoader implements \Twig_LoaderInterface
 {
     protected $paths;
     protected $cache;
@@ -27,10 +40,10 @@ class Twig_Loader_CoreAppFilesystem implements Twig_LoaderInterface
      *
      * @param string|array $paths A path or an array of paths where to look for templates
      */
-    public function __construct($paths, $app_path)
+    public function __construct()
     {
-        $this->setPaths($paths);
-        $this->app_path = $app_path;
+        $this->setPaths(Path::ViewDir());
+        $this->app_path = App\PATH;
     }
 
     /**
@@ -60,7 +73,7 @@ class Twig_Loader_CoreAppFilesystem implements Twig_LoaderInterface
         $this->paths = array();
         foreach ($paths as $path) {
             if (!is_dir($path)) {
-                throw new Twig_Error_Loader(sprintf('The "%s" directory does not exist.', $path));
+                throw new \Twig_Error_Loader(sprintf('The "%s" directory does not exist.', $path));
             }
 
             $this->paths[] = realpath($path);
@@ -121,7 +134,7 @@ class Twig_Loader_CoreAppFilesystem implements Twig_LoaderInterface
 
             // simple security check
             if (0 !== strpos($file, $path)) {
-                throw new Twig_Error_Loader('Looks like you try to load a template outside configured directories.');
+                throw new \Twig_Error_Loader('Looks like you try to load a template outside configured directories.');
             }
 
             return $this->cache[$name] = $file;
@@ -140,7 +153,7 @@ class Twig_Loader_CoreAppFilesystem implements Twig_LoaderInterface
                 
                 // simple security check
                 if (0 !== strpos($file, $path)) {
-                    throw new Twig_Error_Loader('Looks like you try to load a template outside configured directories.');
+                    throw new \Twig_Error_Loader('Looks like you try to load a template outside configured directories.');
                 }
 
                 return $this->cache[$name] = $file;
@@ -148,6 +161,6 @@ class Twig_Loader_CoreAppFilesystem implements Twig_LoaderInterface
             
         }//end if
 
-        throw new Twig_Error_Loader(sprintf('Unable to find template "%s" (looked into: %s).', $name, implode(', ', $this->paths)));
+        throw new \Twig_Error_Loader(sprintf('Unable to find template "%s" (looked into: %s).', $name, implode(', ', $this->paths)));
     }
 }

@@ -70,7 +70,7 @@ class View
     public static function Parse($string, array $assign = array())
     {
         if (!isset(self::$Parser)) {
-            self::$Parser = new \Twig_EnvironmentCoreApp(new \Twig_Loader_String());
+            self::$Parser = new ViewTwigEnvironment(new \Twig_Loader_String());
             
         }//end if
         return self::$Parser->loadTemplate($string)->render($assign);
@@ -157,8 +157,8 @@ class View
          * strict_variables (new in Twig 0.9.7): If set to false, Twig will silently ignore invalid variables (variables and or attributes/methods that do not exist) and replace them with a null value. When set to true, Twig throws an exception instead (default to false).
          */
         
-        $loader     = new \Twig_Loader_CoreAppFilesystem(Path::ViewDir(), \Core\App\PATH);
-        $engine     = new \Twig_EnvironmentCoreApp($loader, $config);
+        $loader     = new ViewTwigLoader();
+        $engine     = new ViewTwigEnvironment($loader, $config);
         
         $uri        = Path::Uri();
         
@@ -237,11 +237,11 @@ class View
         $config = Tools::ArrayMerge($default, $config);
         $config['cache'] = Path::TempDir('tpl');
 
-        $loader     = new \Twig_Loader_CoreAppFilesystem(Path::ViewDir(), \Core\App\PATH);
+        $loader     = new ViewTwigLoader();
         $template   = "{$code}.html";
         try {
             $loader->isFresh($template, 0);
-            $engine = new \Twig_EnvironmentCoreApp($loader, $config);
+            $engine = new ViewTwigEnvironment($loader, $config);
             self::$Assignments['ErrorPageMessage'] = $echo;
             $engine->loadTemplate($template)->display(self::$Assignments);
         } catch (\Exception $exc) {

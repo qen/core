@@ -23,18 +23,21 @@
  * @date 2011.05.30
  *
  */
-class Twig_EnvironmentCoreApp extends Twig_Environment
+namespace Core;
+
+class ViewTwigEnvironment extends \Twig_Environment
 {
     protected $cache = true;
     
-    public function __construct(Twig_LoaderInterface $loader = null, $options = array())
+    public function __construct(\Twig_LoaderInterface $loader = null, $options = array())
     {
         $options['autoescape']          = true;
         $options['strict_variables']    = false;
+
         parent::__construct($loader, $options);
 
-        $this->addExtension(new \Twig_Extension_CoreApp());
         $this->addExtension(new \Twig_Extension_Text());
+        $this->addExtension(new ViewTwigExtension());
 
         /**
          * let's use ruby style
@@ -85,7 +88,7 @@ class Twig_EnvironmentCoreApp extends Twig_Environment
             }
         }
 
-        throw new Twig_Error_Runtime(sprintf('Failed to write cache file "%s".', $file));
+        throw new \Twig_Error_Runtime(sprintf('Failed to write cache file "%s".', $file));
     }
 
     public static function TrimWhiteSpace($source)

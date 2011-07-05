@@ -31,13 +31,13 @@ namespace Core {
     include 'class/base.php';
     include 'class/config.php';
     include 'class/controller.php';
-    include 'class/debug.php';
+    include 'class/db.php';
+    //include 'class/debug.php'; # not a required file to include
     include 'class/exception.php';
-    include 'class/tools.php';
-    include 'class/view.php';
     include 'class/model.php';
     include 'class/model_actions.php';
-    include 'class/db.php';
+    //include 'class/tools.php'; # not a required file to include
+    include 'class/view.php';
 
     function logger($value, $title = '', $file = 'messages.log')
     {
@@ -647,10 +647,12 @@ namespace Core\App {
         }// end foreach
 
         $class = array_pop($path);
+        
+        $path = $prefix. "/" . strtolower(implode("/", $path));
 
-        $path = $prefix."/" . strtolower(implode("/", $path));
+        if (!preg_match("|/$|", $path)) $path .= '/';
 
-        $filename = $path . '/' . $class . '.php';
+        $filename = $path . $class . '.php';
 
         return $filename;
     }
@@ -724,6 +726,10 @@ namespace Core\App {
                 return true;
                 break;
 
+            case preg_match('|^Core\\\[A-Z][a-z0-9]+|', $klass):
+                $filename   = core_app_filename('Core\\', 'class', $klass);
+                break;
+            
             default:
                 preg_match_all('/([A-Z][a-z0-9]+)/', $klass, $matches);
                 $file       = strtolower(implode('_', $matches[1]));
