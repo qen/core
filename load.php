@@ -695,6 +695,26 @@ namespace Core\App {
     $app_path   = PATH;
     $core_path  = \Core\PATH;
 
+    /**
+     * packages autoload and add to includes path
+     */
+    if (is_dir("{$app_path}/packages")) {
+        $packages = dir("{$app_path}/packages");
+        while (false !== ($entry = $packages->read())) {
+            if ('.' == $entry || '..' == $entry) continue;
+            if (!is_dir("{$packages->path}/{$entry}")) continue;
+            
+            $package_lib = "{$packages->path}/{$entry}/lib";
+            if (is_dir($package_lib)) array_push($paths, $package_lib);
+
+            $package_init = "{$packages->path}/{$entry}/init.php";
+            if (!is_file("{$packages->path}/{$entry}/init.php")) continue;
+
+            require $package_init;
+        }//end while
+        $packages->close();
+    }//end if
+
     array_unshift($paths, $app_path, $core_path);
 
     set_include_path(implode(PATH_SEPARATOR, $paths));
