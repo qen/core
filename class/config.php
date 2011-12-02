@@ -126,6 +126,14 @@ namespace Core;
             static::$Config = Tools::ArrayMerge(static::$Config, $config);
         }
 
+        /**
+         *
+         */
+        public static function Value()
+        {
+           return static::$Config;
+        }
+
         public static function __callStatic($var, $arg)
         {
             if (empty(static::$Config))

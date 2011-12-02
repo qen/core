@@ -26,6 +26,10 @@
 namespace Core;
 
 use Core\App\Path;
+
+require 'common/css_min.php';
+require 'common/js_min_plus.php';
+
 use \CssMin;
 use \JsMinPlus;
 
@@ -36,25 +40,38 @@ class ViewTwigExtension extends \Twig_Extension
 
         if (preg_match('/^helper_function_([a-z0-9_]+)/i', $name)) {
             list(,,$func) = explode("_", $name, 3);
-
-            if (!array_key_exists($func, View::$Functions)) {
+            $call = View::Functions();
+            if (!array_key_exists($func, $call)) {
                 $exc = new Exception("{$func} is not a valid view_helper_function");
                 throw $exc;
             }//end if
             
-            $func = View::$Functions[$func];
+            $func = $call[$func];
             return call_user_func_array($func, $args);
         }
 
         if (preg_match('/^helper_filter_([a-z0-9_]+)/i', $name)) {
             list(,,$func) = explode("_", $name, 3);
-
-            if (!array_key_exists($func, View::$Filters)) {
+            $call = View::Filters();
+            if (!array_key_exists($func, $call)) {
                 $exc = new Exception("{$func} is not a valid view_helper_filter");
                 throw $exc;
             }//end if
 
-            $func = View::$Filters[$func];
+            $func = $call[$func];
+            return call_user_func_array($func, $args);
+        }
+
+        if (preg_match('/^helper_test_([a-z0-9_]+)/i', $name)) {
+            list(,,$func) = explode("_", $name, 3);
+            $call = View::Tests();
+            
+            if (!array_key_exists($func, $call)) {
+                $exc = new Exception("{$func} is not a valid view_helper_test");
+                throw $exc;
+            }//end if
+
+            $func = $call[$func];
             return call_user_func_array($func, $args);
         }
         
@@ -74,11 +91,11 @@ class ViewTwigExtension extends \Twig_Extension
             'base64'    => new \Twig_Filter_Method($this, 'twig_base64_filter'),
             'dump'      => new \Twig_Filter_Method($this, 'twig_dump_filter'),
             'hyphenate' => new \Twig_Filter_Method($this, 'twig_hyphenate_filter'),
-            'url_decode' => new \Twig_Filter_Method($this, 'twig_url_decode_filter'),
+            'url_decode' => new \Twig_Filter_Method($this, 'twig_url_decode_filter')
         );
-
-        if (!empty(View::$Filters)) {
-            foreach (View::$Filters as $k => $v) {
+        $assigned = View::Filters();
+        if (!empty($assigned)) {
+            foreach ($assigned as $k => $v) {
                 if (!is_callable($v) || !preg_match('/[a-z0-9_]+/i', $k)) continue;
                 $filters[$k] = new \Twig_Filter_Method($this, "helper_filter_{$k}");
             }//endforeach
@@ -90,12 +107,16 @@ class ViewTwigExtension extends \Twig_Extension
     public function getFunctions()
     {
         $functions = array();
-
-        if (!empty(View::$Functions)) {
-            foreach (View::$Functions as $k => $v){
+        $assigned = View::Functions();
+        if (!empty($assigned)) {
+            foreach ($assigned as $k => $v){
                 if (!is_callable($v) || !preg_match('/^[a-z0-9_]+/i', $k)) continue;
                 $functions[$k] = new \Twig_Function_Method($this, "helper_function_{$k}");
             }//end foreach
+        }//end if
+
+        if (!array_key_exists('numpage', $functions)) {
+            $functions['numpage'] = new \Twig_Filter_Method($this, 'twig_numpage_function');
         }//end if
 
         return $functions;
@@ -103,10 +124,21 @@ class ViewTwigExtension extends \Twig_Extension
 
     public function getTests()
     {
-        return array(
+        $tests = array(
             'email' => new \Twig_Test_Method($this, 'twig_test_email'),
             'blank' => new \Twig_Test_Method($this, 'twig_test_blank')
         );
+
+        $assigned = View::Tests();
+
+        if (!empty($assigned)) {
+            foreach ($assigned as $k => $v){
+                if (!is_callable($v) || !preg_match('/^[a-z0-9_]+/i', $k)) continue;
+                $tests[$k] = new \Twig_Test_Method($this, "helper_test_{$k}");
+            }//end foreach
+        }//end if
+
+        return $tests;
     }
 
     /**
@@ -203,6 +235,73 @@ class ViewTwigExtension extends \Twig_Extension
     function twig_test_blank($value)
     {
         return empty($value);
+    }
+
+    function twig_numpage_function($numpage)
+    {
+        if (!$numpage['nav']['page_current']) return array();
+        
+        $href = $_GET;
+
+        $start = $numpage['nav']['page_start'];
+        $end = $numpage['nav']['page_end'];
+
+        $pages = array();
+
+        $href['p'] = $start - 1;
+        $pages["Prev"] = array(
+            'href' => '',
+            'class' => 'disabled'
+        );
+
+        $pages["1"] = array(
+            'href' => '',
+            'class' => 'first'
+        );
+        
+        if ($numpage['nav']['page_current'] != 1) {
+            $href['p'] = $numpage['nav']['page_current'] - 1;
+            $pages["Prev"]['href'] = http_build_query($href);
+            $pages["Prev"]['class'] = '';
+
+            $href['p'] = 1;
+            $pages["1"]['href'] = http_build_query($href);
+        }//end if
+
+        if ($start <= 2)
+            $pages["1"]['class'] = '';
+        
+        for($i = $start; $i <= $end; $i++){
+            $href['p'] = $i;
+            $pages["{$i}"] = array(
+                'href' => http_build_query($href),
+            );
+        }//end for
+
+        $href['p'] = $numpage['nav']['page_total'];
+        $pages["{$numpage['nav']['page_total']}"] = array(
+            'href' => http_build_query($href),
+            'class' => 'last',
+        );
+
+        $href['p'] = $numpage['nav']['page_current'] + 1;
+        $pages["Next"] = array(
+            'href' => http_build_query($href),
+        );
+
+        if ($numpage['nav']['page_current'] == $numpage['nav']['page_total']) {
+            $pages["{$numpage['nav']['page_total']}"]['href'] = '';
+            $pages["Next"]['href'] = '';
+            $pages["Next"]['class'] = 'disabled';
+        }//end if
+
+        if ($numpage['nav']['page_total'] <= ($end + 1))
+            $pages["{$numpage['nav']['page_total']}"]['class'] = '';
+
+
+        $pages["{$numpage['nav']['page_current']}"]['class'] = 'current';
+
+        return $pages;
     }
     
 }

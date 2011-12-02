@@ -24,10 +24,8 @@
  *
  */
 namespace Core;
-use Core\Debug;
+
 use Core\Base;
-use Core\App;
-use Core\App\Config as AppConfig;
 use Core\Exception;
 use \PDO;
 
@@ -39,6 +37,7 @@ use \PDO;
 class Db
 {
     public static $Debug = true; // dump to db.log
+    public static $Config = array();
     /**
      *
      */
@@ -80,7 +79,7 @@ class Db
     public static function Instance($dbconfig = array()) {
 
         if (empty($dbconfig))
-            $dbconfig = AppConfig::Db();
+            $dbconfig = static::$Config;
 
         $dsn = $dbconfig['dsn'];
         $usr = $dbconfig['usr'];
@@ -248,7 +247,7 @@ class Db
         $result = $this->rst[$idx]->execute($params);
         if ($result === false) {
             $dump       = $this->cnn->errorInfo();
-            $message    = "{$dump[0]} [{$dump[1]}] {$dump[2]} \n\r {$this->sql_execute} {$count}";
+            $message    = "{$dump[0]} [{$dump[1]}] {$dump[2]} \n\r -- {$this->sql_execute} -- {$count}";
             throw new Exception($message);
         }//end if
 
@@ -277,9 +276,8 @@ class Db
      * @todo add schema configuration lookup
      * to reduce the number of sql query, ideal for production environment
      */
-    public function getSchema($table, $sanitize = array())
+    public function getSchema($table)
     {
-        self::$Stats['getSchema'] += 1;
         
         /**
          * check if table schemas is defined in the config
@@ -290,27 +288,30 @@ class Db
         if (!empty($this->schemas[$table]))
             return $this->schemas[$table];
 
+        self::$Stats['getSchema'] += 1;
+
         $field_types = array(
             'numeric'   => '/(int|float|real|decimal|double)/is',
             'char'      => '/(char)/is', # this include varchar as well
             'text'      => '/(text)/is',
             'bit'       => '/(bit)/is',
-            'datetime'  => '/(date|time|datetime)/is',
+            'date'      => '/(date)/is',
+            'time'      => '/(time)/is',
+            'datetime'  => '/(datetime)/is',
         );
         
         $sql        = "SHOW FIELDS FROM `{$table}`";
         $results    = $this->query($sql);
         $fields     = array();
+        $sanitize   = array();
         foreach ($results as $k => $v) {
             $v['auto_increment']    = ($v['Extra'] == 'auto_increment'? true: false);
 
             if (empty($sanitize[$v['Field']])) {
-                $sanitize[$v['Field']]  = 'raw';
+                $sanitize[$v['Field']]  = 'char';
                 foreach ($field_types as $type => $regex) {
                     if (preg_match($regex, $v['Type'])) {
-                        if ($type == 'char')
-                            $type = $v['Type'];
-
+                        //if ($type == 'char') $type = $v['Type'];
                         $sanitize[$v['Field']] = $type;
                         break;
                     }//end if

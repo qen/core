@@ -41,6 +41,7 @@ class Tools {
         switch($mode){
             case "decode":
                 $hash = @unserialize(gzuncompress(base64_decode($var)));
+                if ($hash === false) return $var;
                 break;
 
             case "encode":
@@ -81,62 +82,6 @@ class Tools {
      *
      */
     public static function Validate(array $check_data, $field){
-    /***************
-
-        $check_data['required'] = array(
-            'firstname'         => 'Your First Name is Required',
-            'lastname'          => 'Your Last Name is Required',
-        );
-
-        $check_data['required_if_exists'] = array(
-            'firstname'          => 'Your First Name is Required',
-            'lastname'          => 'Your Last Name is Required',
-        );
-
-        // requires at least one field is supplied
-        $check_data['required_optional'] array{
-            'address'          => 'Address is Required',
-            'city'          => 'City is Required',
-            'zipcode'          => 'Zipcode is Required',
-        };
-
-        $check_data['email'] = array(
-            'email'          => 'Please enter a valid email address.',
-        );
-
-        $check_data['password'] = array(
-            'password1'          => 'Password has to be 6 characters long and must consist of numbers and letters.',
-        );
-
-        $check_data['url'] = array(
-            'website'          => 'Please enter a valid website address. (ie: http://www.acnesource.com)',
-        );
-
-        $check_data['numeric'] = array(
-            'amount'          => 'enter numeric data',
-        );
-
-        $check_data['nonzero'] = array(
-            'amount'          => 'enter value greater than zero.',
-        );
-
-        $check_data['equality'] = array(
-            'password'         => array('confirm', 'Please enter a valid website address.'),
-        );
-
-        $check_data['date'] = array(
-            'date'          => 'Please enter a valid website address. (ie: http://www.acnesource.com)',
-        );
-
-        try{
-            static::validate($check_data, $data);
-        }catch(errors $e){
-            $this->error($e->getMessages());
-            return false;
-        }//end try
-
-    ***************/
-    ############################################################################
         
         $err = array();
 
@@ -265,19 +210,20 @@ class Tools {
         if (count($err) == 0) return true;
 
         $exc = new Exception($err);
+        //$exc->traceup()->traceup()->traceup()->traceup()->traceup();
         $exc->traceup();
         throw $exc;
 
         return false;
       }//end function
 
-      /**
-       *  function
-       * @param
-       * @return
-       */
-      public static function Sanitize(array $data, array $config = array(), $paranoid = true)
-      {
+    /**
+    *  function
+    * @param
+    * @return
+    */
+    public static function Sanitize(array $data, array $config = array(), $paranoid = true)
+    {
 
         /**
          * paranoid mode
@@ -295,7 +241,7 @@ class Tools {
                 $config[$v] = 'char';
             }//end foreach
         }//end if
-        
+
         foreach($config as $idx=>$cmd){
             if (!array_key_exists($idx, $data)) continue;
 
@@ -478,10 +424,10 @@ class Tools {
                * it will trim the data to 100 in length
                *
                */
-//              case preg_match("/^char/is", $cmd):
-//                  list(, $length) = explode("-", $cmd, 2);
-//                  if (!is_numeric($length))
-//                      $length = 255;
+        //              case preg_match("/^char/is", $cmd):
+        //                  list(, $length) = explode("-", $cmd, 2);
+        //                  if (!is_numeric($length))
+        //                      $length = 255;
               case preg_match("/char\(([0-9].+)\)/is", $cmd, $matches):
                   $mlength = $matches[1];
 
@@ -528,7 +474,7 @@ class Tools {
                       $data[$idx] );
 
                   $data[$idx] = trim(strip_tags($data[$idx]));
-                  
+
                   if (is_numeric($length))
                     $data[$idx] = substr($data[$idx], 0, $length);
 
@@ -538,7 +484,7 @@ class Tools {
         }//end foreach
 
         return $data;
-    }// end function 
+    }
 
     /**
      *  function
@@ -590,7 +536,7 @@ class Tools {
         }//end foreach
 
         return $retval;
-    }// end function
+    }
 
     /**
      *  function

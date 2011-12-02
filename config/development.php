@@ -1,5 +1,7 @@
 <?php
 
+echo "<h1>development.php is not configured</h1>"; exit;
+
 return <<<CONFIG_JSON
 {
     "db" : {
@@ -12,3 +14,4 @@ return <<<CONFIG_JSON
 
 }
 CONFIG_JSON;
+

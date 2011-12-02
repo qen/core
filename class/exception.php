@@ -36,12 +36,15 @@ class Exception extends \Exception
 
     private $details    = array();
     private $traceindex = -1;
+    public $from = '';
+    public $parameters = null;
 
     /**
      * Constructor
      * @access protected
      */
-    public function __construct($messages, $code = 0) {
+    public function __construct($messages, $code = 0)
+    {
         // some code
         if (is_array($messages))
             $messages = implode(";", $messages);

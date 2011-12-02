@@ -29,27 +29,33 @@ use Core\App;
 use Core\App\Path;
 use Core\App\Config as AppConfig;
 
-class View
+class View implements \ArrayAccess
 {
-    public static $Filters      = array();
-    public static $Functions    = array();
 
     public static $Debug = true;
-
+    
+    private static $Filters      = array();
+    private static $Functions    = array();
+    private static $Tests        = array();
+    private static $Assignments     = array();
+    
     private static $Parser      = null;
     private static $Instance    = null;
 
-    private static $Template            = '';
-    private static $Default_Template    = '';
+    private $mode_options   = array('template', 'json', 'file', 'inline');
+    private $mode           = 'template';
+    private $content        = '';
     
-    private static $Assignments = array();
+    private $status         = 200;
+    
+    public $nocache         = null;
+    public $content_type    = null;
+    public $attachment      = null;
+    public $default         = ''; // default template to render
 
-    public function  __construct()
+    private function  __construct()
     {
-        if (isset(self::$Instance))
-            throw new Exception('Construct failed on Singleton class['.__CLASS__.']');
 
-        //self::$engine = new Twig();
     }
 
     public static function Instance()
@@ -67,12 +73,193 @@ class View
      * @access
      * @var
      */
-    public static function Parse($string, array $assign = array())
+    public function __get($name)
     {
-        if (!isset(self::$Parser)) {
-            self::$Parser = new ViewTwigEnvironment(new \Twig_Loader_String());
-            
+        if ($this->mode == $name)
+            return $this->content;
+
+        if ($name == 'status')
+            return $this->status;
+        
+        if ($name  == 'assign')
+            return $this;
+
+        return null;
+    }
+
+    /**
+     *
+     * @access
+     * @var
+     */
+    public function __set($name, $value)
+    {
+        if (in_array($name, $this->mode_options)) {
+            $this->mode     = $name;
+            $this->content  = $value;
+            return true;
         }//end if
+
+        switch ($name) {
+            
+            case 'status':
+                $this->status = $value;
+                if ($value != 200) {
+                    $exc = new Exception('render_status');
+                    $exc->traceup();
+                    $exc->parameters = $value;
+                    throw $exc;
+                }//end if
+                break;
+
+            case 'last_modified':
+                if (!is_array($value))
+                    $value = array($value);
+
+                list($lastmodified, $cachelifetime) = $value;
+                
+                if (empty($cachelifetime)) $cachelifetime  = '+24 days';
+
+                if (is_string($lastmodified))
+                    $lastmodified = strtotime($lastmodified);
+
+                header('Last-Modified: ' . gmdate('D, d M Y H:i:s', $lastmodified) . ' GMT');
+                header('Cache-Control: max-age='.(strtotime($cachelifetime)).', must-revalidate, public');
+
+                $headers = App\http_headers();
+                
+                if (isset($headers['If-Modified-Since'])) {
+                    $modifiedSince = explode(';', $headers['If-Modified-Since']);
+                    $modifiedSince = strtotime($modifiedSince[0]);
+
+                    if (max($lastmodified, $modifiedSince) ==  $modifiedSince){
+                        @header("HTTP/1.1 304 Not Modified");
+                        App\shutdown();
+                    }//end if
+                    
+                }//end if
+                break;
+                
+            default:
+                break;
+        }// end switch
+
+        return true;
+    }
+
+    /**
+     *
+     * @access
+     * @var
+     */
+    public function offsetSet($offset, $value)
+    {
+        /**
+         * check if function, ends with ()
+         * example: email()
+         */
+        if (preg_match('|[a-z]+[a-z0-9]*\(\)$|', $offset)) {
+            $offset = str_replace('()', '', $offset);
+
+            if (!is_callable($value)) {
+                $exc = new Exception("view_helper_function {$offset} is not a callable function");
+                $exc->traceup();
+                throw $exc;
+            }//end if
+
+            self::$Functions[$offset] = $value;
+            return true;
+        }//end if
+
+        /**
+         * check if filter, ends with |
+         * example: email|
+         */
+        if (preg_match('/[a-z]+[a-z0-9]*\|$/', $offset)) {
+            $offset = str_replace('|', '', $offset);
+
+            if (!is_callable($value)) {
+                $exc = new Exception("view_helper_filter {$offset} is not a callable function");
+                $exc->traceup();
+                throw $exc;
+            }//end if
+
+            self::$Filters[$offset] = $value;
+            return true;
+        }//end if
+
+        /**
+         * check if test, ends with ?
+         * example: email?
+         */
+        if (preg_match('/[a-z]+[a-z0-9]*\?$/', $offset)) {
+            $offset = str_replace('?', '', $offset);
+
+            if (!is_callable($value)) {
+                $exc = new Exception("view_helper_test {$offset} is not a callable function");
+                $exc->traceup();
+                throw $exc;
+            }//end if
+
+            self::$Tests[$offset] = $value;
+            return true;
+        }//end if
+
+        /**
+         * core model integration
+         */
+        if ($value instanceof Model) {
+            $get        = params()->get;
+            $href       = '';
+            unset($get['p']);
+            foreach ($get as $k => $v) $href .= "{$k}={$v}&";
+            $value->numpage['href'] = "?{$href}p=";
+        }//end if
+
+        self::$Assignments[$offset] = $value;
+    }
+
+    /**
+     *
+     * @access
+     * @var
+     */
+    public function offsetGet($offset)
+    {
+
+    }
+
+    /**
+     *
+     * @access
+     * @var
+     */
+    public function offsetExists($offset)
+    {
+
+    }
+
+    /**
+     *
+     * @access
+     * @var
+     */
+    public function offsetUnset($offset)
+    {
+
+    }
+
+
+    /**
+     *
+     * @access
+     * @var
+     */
+    public function text($string, array $assign = array())
+    {
+        if (!isset(self::$Parser)) 
+            self::$Parser = new ViewTwigEnvironment(new \Twig_Loader_String());
+        
         return self::$Parser->loadTemplate($string)->render($assign);
     }
 
@@ -81,47 +268,86 @@ class View
      * @access
      * @var
      */
-    public static function Assign($var, $value)
+    public static function Functions()
     {
-        if (is_null($var))
-            return self::$Assignments;
-
-        if (is_null($value))
-            return self::$Assignments[$var];
-
-        self::$Assignments[$var] = $value;
-
-        return $value;
+        return self::$Functions;
     }
 
-    /**
-     *
-     * @access
-     * @var
-     */
-    public static function Template($template = null)
+    public static function Filters()
     {
-        if (is_null($template))
-            return self::$Template;
-        
-        self::$Template = $template;
+        return self::$Filters;
     }
 
-    public static function DefaultTemplate($template = null)
+    public static function Tests()
     {
-        if (is_null($template))
-            return self::$Default_Template;
-
-        self::$Default_Template = $template;
+        return self::$Tests;
     }
-
+    
     /**
      *
      * @access :noextend
      * @var
      */
-    public function response(\Core\Controller $self, $method)
+    public function __invoke(\Core\Controller $self, $method)
     {
+        
+        if (!empty($this->content_type))
+            header('Content-type: '. $this->content_type);
+
+        if (!empty($this->attachment)) 
+            header("Content-Disposition: attachment; filename={$this->attachment}");
+
+
+        if ($this->nocache === true) {
+            // fix for IE catching or PHP bug issue
+            header("Pragma: no-cache");
+            header("cache-control: private"); //IE 6 Fix
+            header("cache-Control: no-store, no-cache, must-revalidate");
+            header("cache-Control: post-check=0, pre-check=0", false);
+            header("Expires: Thu, 24 May 2001 05:00:00 GMT"); // Date in the past
+        }//end if
+        
+        /**
+         * check if mode is json
+         */
+        switch ($this->mode) {
+            case 'json':
+                $content = $this->content;
+                if (is_callable($content)) $content = $content();
+                
+                echo json_encode($content);
+                break;
+
+            case 'file':
+                $content = $this->content;
+                if (is_callable($content)) $content = $content();
+                
+                if (is_file($content))
+                    readfile($this->content);
+                else
+                    App\http_status(500, 'file content does not exists');
+
+                break;
+
+            case 'inline':
+                header("Content-Disposition: inline;");
+                $content = $this->content;
+                if (is_callable($content))
+                    $content = $content();
+                
+                if (!empty($content)) echo $content;
+                break;
+            
+            default:
+                $this->mode = 'template';
+                break;
+        }// end switch
+        
+        if ($this->mode != 'template') return true;
+        
+        /**
+         * template rendering here
+         */
         $default = array(
             'strict_variables'  => false,
             'auto_reload'       => true,
@@ -161,8 +387,9 @@ class View
         $engine     = new ViewTwigEnvironment($loader, $config);
         
         $uri        = Path::Uri();
-        
-        if (empty(self::$Template)) {
+        $template   = $this->content;
+        $default    = $this->default;
+        if (empty($template)) {
             
             $uri['rootpath']        = str_replace($uri['root'], '', $uri['path']);
             $tplfolder              = ($uri['method'] == 'index') ? '/': '/'.$uri['method'] ;
@@ -185,14 +412,14 @@ class View
             $verbose[] = "tplfolder = {$tplfolder}";
             
             foreach ($template_assumptions as $k => $v) {
-                self::$Template = $v;
+                $template = $v;
 
                 try {
-                    $loader->isFresh(self::$Template, 0);
+                    $loader->isFresh($template, 0);
                     $verbose[] = "using {$v}";
                     break;
                 } catch (\Exception $exc) {
-                    self::$Template = null;
+                    $template = null;
                     $verbose[] = "{$v} not found";
                 }//end try
             }// end foreach
@@ -200,28 +427,34 @@ class View
             /**
              * if still null use default_template
              */
-            if (is_null(self::$Template)) {
-                if (empty(self::$Default_Template))
-                    self::$Default_Template = "{$uri['rootpath']}.html";
-                    
-                self::$Template = self::$Default_Template;
+            if (is_null($template)) {
+                if (empty($default)) $default = "{$uri['rootpath']}.html";
+                $template = $default;
             }//end if
             
         }//end if
 
-        if (!preg_match('|\.html?$|', self::$Template))
-            self::$Template = self::$Template.'/'.Path::Uri('method').'.html';
-        
-        #self::$Assignments['App']['template'] = $template;
-        
-        $engine->loadTemplate(self::$Template)->display(self::$Assignments);
+        if (!preg_match('|\.html?$|', $template)) $template = "{$template}/{$uri['method']}.html";
 
-        if (self::$Debug) 
-            logger(array($uri, self::$Template, $template_assumptions, $verbose), $_SERVER['REQUEST_URI']);
+        if (!preg_match('|^/|', $template)) $template = "{$uri['path']}/{$template}";
+
+        if (self::$Debug) logger(array($uri, $template, $template_assumptions, $verbose), $_SERVER['REQUEST_URI']);
+
+        $engine->loadTemplate($template)->display(self::$Assignments);
 
     }
 
-    public function ErrorPage($code, $echo)
+    /**
+     *
+     * @access
+     * @var
+     */
+    public function controller(\Core\Controller $self, $method)
+    {
+        $this($self, $method);
+    }
+
+    public function errorPage($code, $echo)
     {
         $default = array(
             'strict_variables'  => false,
@@ -247,6 +480,8 @@ class View
         } catch (\Exception $exc) {
             echo "<h1>{$code} Page Error</h1>{$echo}";
         }//end try
+
+        App\shutdown();
     }
 
 }

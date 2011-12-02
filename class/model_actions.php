@@ -49,17 +49,12 @@ class ModelActions
     public $cached_results = array();
     
     /**
-     * stores uids models modified configuration such as associations stuff
-     */
-    private $objects    = array();
-    
-    /**
      *
      * @access 
      * @var 
      */
 
-    public function Instance()
+    public static function Instance()
     {
         if (is_null(self::$Instance)) {
             $klass = __CLASS__;
@@ -95,18 +90,28 @@ class ModelActions
      */
     public function load(Model $obj, array $default_dbconfig = array())
     {
-        $this->objects[$obj->uid] = array(
-            'associations' => array()
-        );
+
         list($class, $modulens, $name) = $this->ids($obj);
         
         if (array_key_exists($class, $this->models)) {
             return true;
         }//end if
 
+        /**
+         * determine model name
+         */
+        $obj::$Name = ucfirst($obj::$Name);
+        if (empty($obj::$Name)) {
+            $name       = explode('\\', $class);
+            $obj::$Name = array_pop($name);
+
+            if ($obj::$Name == 'Base')
+                $obj::$Name = array_pop($name);
+        }//end if
+
         $model = array(
-            'cacheid'   => Tools::Uuid(),
-            'parent'    => ''
+            'cacheid'       => Tools::Uuid(),
+            'associations'  => array()
         );
 
         $this->cached_results[$class] = array();
@@ -149,8 +154,8 @@ class ModelActions
         $this->modules[$modulens]['config'] = $config;
         $this->modules[$modulens]['db'] = $db;
         
-        $model['schema']['self']    = $db->getSchema($class::$Table_Name, $class::$Sanitize);
-        $model['schema']['parent']  = array();
+        $model['schema']['self']    = $db->getSchema($class::$Table_Name);
+        $model['schema']['link']    = array();
         $allfields = array();
         $allfields[$class::$Table_Name] = array_keys($model['schema']['self']['fields']);
 
@@ -159,25 +164,6 @@ class ModelActions
             $exc->traceup();
             throw $exc;
         }//end if
-        
-        $pclass = get_parent_class($class);
-        
-        if ($pclass != 'Core\\Model') {
-            $model['parent'] = $pclass;
-            $model['schema']['parent'] = $db->getSchema($pclass::$Table_Name, $pclass::$Sanitize);
-            $allfields[$pclass::$Table_Name] = array_keys($model['schema']['parent']['fields']);
-            
-            if (empty($model['schema']['parent']['pkeys'])) {
-                $exc = new Exceptions("Please define a primary key index for tablle {$pclass::$Table_Name}");
-                $exc->traceup();
-                throw $exc;
-            }//end if
-
-            /**
-             * modify class $Find_Options, join the parent class table
-             */
-            $class::$Find_Options['join'][$pclass::$Table_Name] = "`{$model['schema']['self']['table']}`.`{$model['schema']['self']['pkeys'][0]['name']}` = `{$model['schema']['parent']['table']}`.`{$model['schema']['parent']['pkeys'][0]['name']}`";
-        }
 
         $model['schema']['fields'] = array();
         foreach ($allfields as $table => $fields) {
@@ -214,132 +200,160 @@ class ModelActions
      * @access
      * @var
      */
-    public function associate(Model $obj, Model $with, array $find = array())
+    public function associate(Model $obj, Model $with, array $options)
     {
-        list($class) = $this->ids($obj);
+        list($obj_class, $obj_ns)   = $this->ids($obj);
+
+        if (array_key_exists($with::$Name, $this->models[$obj_class]['associations'])) {
+            $associate = $this->models[$obj_class]['associations'][$with::$Name];
+
+            $var = array(
+                'model'     => $with,
+                'mode'      => $options['associateby'],
+                'eagerload' => $associate['eagerload']
+            );
+
+            return $var;
+        }//end if
         
-        $query  = (!empty($find['query']))? $find['query'] : $this->models[$class]['schema']['self']['pkeys'][0]['name'];
-        $var    = array();
-        $var['query']  = $query;
+        list($with_class, $with_ns) = $this->ids($with);
 
-        list($class, $modulens, $name) = $this->ids($with);
+        $query = $options['query'];
+        if (empty($query)) {
+            $query  = $this->models[$obj_class]['schema']['self']['pkeys'][0]['name'];
+            /**
+             * associateby belongs_to
+             * foreign_key becomes the query
+             * and foreign_key value is the associated class primary key
+             */
+            if ('belongs_to' == $options['associateby']) {
+                $options['query']          = $options['foreign_key'];
+                $options['foreign_key']    = $this->models[$with_class]['schema']['self']['pkeys'][0]['name'];
+            }//end if
+        }//end if
 
-        $db     = $this->modules[$modulens]['db'];
-        $uid    = $with->uid;
-        $schema = $this->models[$class]['schema'];
-        $fkey   = $find['foreign_key'];
+        /**
+         * check if foreign_table exists
+         */
+        $this->models[$with_class]['schema'][$with->uid] = $this->modules[$with_ns]['db']->getSchema($options['foreign_table']);
 
-        unset($find['query']);
-        unset($find['foreign_key']);
+        $options['find_options'] = Tools::ArrayMerge($with_class::$Find_Options, $options['find_options']);
+        
+        $schema     =& $this->models[$with_class]['schema'];
+        $singleton  = $this;
+        $buildsql   = array();
 
-        $this->objects[$uid]['find'] = Tools::ArrayMerge($class::$Find_Options, $find);
+        if (!empty($options['find_options']['conditions']))
+             $buildsql = self::BuildSearchSql($schema['fields'], $options['find_options']['conditions']);
 
-        $associate = array( 'uid' => $uid );
-        $associate['find']      = $find;
-        $associate['fkey']      = $fkey;
-        $associate['sqlquery']  = function($params, $criteria) use ($schema, $with) {
+        /**
+         * 
+         * check if foreign_table is not equal to
+         * the associated table name, if not then we have a 3rd table definition
+         */
+        $join = array(
+            'link'  => array($obj::$Table_Name, $this->models[$obj_class]['schema']['self']['pkeys'][0]['name']),
+            'self'  => array($with::$Table_Name, $this->models[$with_class]['schema']['self']['pkeys'][0]['name']),
+        );
+        
+        if ($options['foreign_table'] != $with::$Table_Name) {
+            $join['with'] = array($options['foreign_table'], $options['foreign_key']);
+            
+            $fields = array_keys($this->models[$with_class]['schema'][$with->uid]['fields']);
+            
+            foreach ($fields as $k => $field) $this->models[$with_class]['schema']['fields']["{$options['foreign_table']}.{$field}"] = $field;
+            $this->models[$with_class]['schema']['fields']["{$options['foreign_table']}.*"] = "{$options['foreign_table']}.*";
+
+            list($selftable, $selfkey) = $join['self'];
+            list($jointable, $joinkey) = $join['with'];
+            $options['find_options']['join'] = array(
+                "{$jointable}" => "`{$selftable}`.`{$selfkey}` = `{$jointable}`.`{$selfkey}`"
+            );
+
+            $options['find_options']['columns'][] = "{$selftable}.*";
+            $options['find_options']['columns'][] = "{$jointable}.*";
+        }//end if
+
+        $associate = array( 
+            'qkey'  => $options['query'],
+            'fkey'  => $options['foreign_key'],
+            'ftab'  => $options['foreign_table'],
+            'mode'  => $options['associateby'],
+            'join'  => $join,
+        );
+        
+        $associate['sqlquery']  = function($params, $criteria) use ($schema, $with, $join) {
             if ($with->isEmpty()) return null;
+            $where = $with->retrieve('sqlcriteria');
             
             /**
              * build sql string for the existing results
              * if there is any
              */
-            $searchkey = empty($params)? $schema['self']['pkeys'][0]['name'] : $params;
+            $fkey   = empty($params)? $schema['self']['pkeys'][0]['name'] : $params;
+            $ftable = $schema['self']['table'];
 
             $sql = '';
-
-            if (!empty($schema['parent'])) {
+            $innerjoin = '';
+            
+            if (!empty($join['with'])) {
                 /**
-                 * if there is parent schema
+                 * if there is link schema
                  * disregard the passed searchkey, and use our the
                  * 2nd ordinal primary keys
                  */
-                $searchkey = $schema['self']['pkeys'][1]['name'];
+                list($ftable, $fkey) = $join['with'];
 
                 /**
-                 * inner join with parent table
+                 * inner join with associates_in table
                  * using the first ordinal primary keys
                  */
-                $join = "
-                inner join `{$schema['parent']['table']}` on
-                `{$schema['self']['table']}`.`{$schema['self']['pkeys'][0]['name']}` = `{$schema['parent']['table']}`.`{$schema['parent']['pkeys'][0]['name']}`
+                $innerjoin = "
+                inner join `{$join['with'][0]}` on
+                `{$schema['self']['table']}`.`{$schema['self']['pkeys'][0]['name']}` = `{$ftable}`.`{$schema['self']['pkeys'][0]['name']}`
                 ";
 
             }//end if
 
             $sql = "
-            select `{$schema['self']['table']}`.`{$searchkey}`
+            select `{$ftable}`.`{$fkey}`
             from `{$schema['self']['table']}`
-            {$join}
+            {$innerjoin}
+            {$where}
             {$criteria}
             ";
 
             return $sql;
         };//end function
-        $associate['sqljoin']   = function($params) use ($schema){
-            $retval = array();
-            $conditions = array();
 
-            if (empty($params))
-                return $retval;
-
-            /**
-             * @TODO test this
-             */
-            foreach ($params as $k => $v) {
-                if (!array_key_exists($k, $schema['self']['fields'])) continue;
-                $conditions[] = "`{$schema['self']['table']}`.`{$k}` = {$v}";
-            }// end foreach
-            
-            $retval[$schema['self']['table']] = implode(" AND ", $conditions);
-
-            if (!empty($schema['parent'])) {
-                $conditions = array();
-                $conditions[] = "`{$schema['self']['table']}`.`{$schema['self']['pkeys'][0]['name']}` = `{$schema['parent']['table']}`.`{$schema['parent']['pkeys'][0]['name']}`";
-                foreach ($params as $k => $v) {
-                    if (!array_key_exists($k, $schema['parent']['fields'])) continue;
-                    $conditions[] = "`{$schema['parent']['table']}`.`{$k}` = {$v}";
-                }// end foreach
-
-                $retval[$schema['parent']['table']] = implode(" AND ", $conditions);
-            }//end if
-
-            return $retval;
-        };//end function
-        
-        $this->objects[$obj->uid]['associations'][$with::$Name] = $associate;
-
-        $eager_find = $this->objects[$uid]['find'];
-        
-        $singleton  = $this;
-        $buildsql   = array();
-        
-        if (!empty($eager_find['conditions'])) 
-             $buildsql = self::BuildSearchSql($schema['fields'], $eager_find['conditions']);
-
-        $var['eagerload'] = function($allkeys) use ($schema, $fkey, $eager_find, $buildsql, $with, $singleton) {
+        $associate['eagerload'] = function($allkeys) use (&$schema, $options, $buildsql, $with, $singleton) {
             if (empty($allkeys)) return false;
-    
+            $fkey = $options['foreign_key'];
+            $eager_find = $options['find_options'];
+            
             /**
              * add conditions config
              */
-            $where      = array();
             $criteria   = '';
             if (!empty($buildsql))
                 $criteria = "(".implode( " and ", $buildsql).") and ";
 
-            $where[]    = "(`{$schema['self']['table']}`.`{$fkey}` IN (".implode(', ', $allkeys)."))";
+            $where      = array("(`{$schema['self']['table']}`.`{$fkey}` IN (".implode(', ', $allkeys)."))");
             $join       = '';
-
-            if (!empty($schema['parent']))
-                $join = "inner join `{$schema['parent']['table']}` on `{$schema['self']['table']}`.`{$schema['self']['pkeys'][0]['name']}` = `{$schema['parent']['table']}`.`{$schema['parent']['pkeys'][0]['name']}`";
-
+            $orderby    = "order by `{$schema['self']['table']}`.`{$fkey}`";
+            
+            if (!empty($schema[$with->uid])){
+                $join       = "inner join `{$schema[$with->uid]['table']}` on `{$schema['self']['table']}`.`{$schema['self']['pkeys'][0]['name']}` = `{$schema[$with->uid]['table']}`.`{$schema[$with->uid]['pkeys'][0]['name']}`";
+                $where      = array("(`{$schema[$with->uid]['table']}`.`{$fkey}` IN (".implode(', ', $allkeys)."))");
+                $orderby    = "order by `{$schema[$with->uid]['table']}`.`{$fkey}`";
+            }//end if
+            
             $sql = "
             select *
             from `{$schema['self']['table']}`
             {$join}
             where (".implode( " and ", $where).")
-            order by `{$schema['self']['table']}`.`{$fkey}`
+            {$orderby}
             ";
 
             $loop = $with->sqlSelect($sql);
@@ -360,7 +374,7 @@ class ModelActions
             }//end foreach
 
             $eager_find['search'] = $fkey;
-
+            
             foreach ($results as $query => $all) {
 
                 $key = md5(Tools::Hash(array("{$query}", $eager_find, $schema['self'])));
@@ -378,7 +392,18 @@ class ModelActions
             }// end foreach
         };//end function
         
-        return $var;
+        $this->models[$obj_class]['associations'][$with::$Name] = $associate;
+
+        $retval = array(
+            'model'     => $with,
+            'mode'      => $options['associateby'],
+            'eagerload' => $associate['eagerload'],
+            'join'      => $associate['join'],
+            'fkey'      => $associate['fkey'],
+            'find'      => $options['find_options'],
+        );
+        
+        return $retval;
     }
 
     /**
@@ -386,40 +411,27 @@ class ModelActions
      * @access
      * @var
      */
-    public function disassociate(Model $obj, Model $with)
-    {
-        unset($this->objects[$obj->uid]['associations'][$with::$Name]);
-    }
-
-    /**
-     *
-     * @access
-     * @var
-     */
-    public function save(Model $obj)
+    public function save(Model $obj, array $data)
     {
         list($class, $modulens, $name) = $this->ids($obj);
         
         $db     = $this->modules[$modulens]['db'];
-        $data   = $obj->result;
+        #$data   = $obj->result;
         $schema = $this->models[$class]['schema']['self'];
 
-        if ($obj->is_parent === true)
-            $schema = $this->models[$class]['schema']['parent'];
-        
+        if ($obj->is_associated === true)
+            $schema = $this->models[$class]['schema'][$obj->uid];
+            
         $conditions = array();
 
         /**
          * if create is false, then do update sql
-         * check for pkey value and parent pkey value if necessary
+         * check for pkey value and associates_in pkey value if necessary
          */
         $conditions = array();
+
+        $pkey = $schema['pkeys'][0]['name'];
         foreach ($schema['pkeys'] as $k => $v) {
-            /**
-             * we require primary keys that is not set for auto increment
-             */
-            if ( (array_key_exists($v['name'], $data) === false) && $v['auto_increment'] === false )
-                throw new Exception($class.'> save failed, ['.$v['name'].'] does not exists in data array ');
 
             $idx = 'ukey';
             if ($v['auto_increment'] === true)
@@ -583,8 +595,10 @@ class ModelActions
         $data   = $obj->result;
         $schema = $this->models[$class]['schema']['self'];
 
-        if ($obj->is_parent === true)
-            $schema = $this->models[$class]['schema']['parent'];
+        if ($obj->is_associated === true){
+            $schema = $this->models[$class]['schema'][$obj->uid];
+            if (empty($schema)) $schema = $this->models[$class]['schema']['self'];
+        }//end if
         
         /**
          * check that the value for primary keys is not empty
@@ -598,9 +612,12 @@ class ModelActions
             /**
              * we require primary keys that is not set for auto increment
              */
-            //if (empty($data[$v['name']]))
-            if ((array_key_exists($v['name'], $data) === false))
-                throw new Exception($this->class.'> remove failed, primarykey ['.$v['name'].'] cannot be empty ');
+            if ((array_key_exists($v['name'], $data) === false)){
+                $exc = new Exception($this->class.'> remove failed, primarykey ['.$v['name'].'] cannot be empty ');
+                $exc->traceup()->traceup();
+                throw $exc;
+            }
+                
 
             $idx = 'ukey';
             if ($v['auto_increment'] === true)
@@ -621,10 +638,10 @@ class ModelActions
 
         if (self::$Debug)
             logger(array($conditions, $sql) , "{$class} > ".__FUNCTION__, 'model_actions.log');
-            
+
         /**
          * clear cache result for the class
-         * since the table has been modifieid
+         * since the table has been modified
          */
         $this->cached_results[$class] = array();
         
@@ -644,19 +661,8 @@ class ModelActions
         $uid    = $obj->uid;
         $schema = $this->models[$class]['schema'];
         $find   = $class::$Find_Options;
-
-        if (is_array($this->objects[$uid]['find'])) $find = $this->objects[$uid]['find'];
         
         $find = Tools::ArrayMerge($find, $options);
-
-        if ($obj->is_parent === true) {
-            $schema['self'] = $schema['parent'];
-            unset($find['join'][$schema['self']['table']]);
-            foreach ($schema['fields'] as $k => $v) {
-                if (preg_match("/^{$schema['self']['table']}\./i", $k)) continue;
-                unset($schema['fields'][$k]);
-            }// end foreach
-        }//end if
 
         if (!is_null($collectby) && !array_key_exists($collectby, $schema['self']['fields']))
             throw new Exception($this->class.'> ['.$schema['self']['table'].'.'.$collectby.'] collectby is not a valid field name');
@@ -665,36 +671,16 @@ class ModelActions
          * process associations here
          * if the associations has results
          */
-        if (!empty($this->objects[$uid]['associations']) && $obj->isEmpty()) {
-            foreach ($this->objects[$uid]['associations'] as $k => $v) {
-                $sql = $v['sqlquery']($v['fkey'], $this->objects[$v['uid']]['criteria'] );
+        if (!empty($this->models[$class]['associations']) && $obj->isEmpty()) {
+            foreach ($this->models[$class]['associations'] as $k => $v) {
+                $sql = $v['sqlquery']($v['fkey'], $obj->retrieve('sqlcriteria'));
                 if (empty($sql)) continue;
-                $find['subquery'][] = $sql;
+                $find['subquery'][] = array(
+                    'sql' => $sql,
+                    'key' => ( ($v['mode'] == 'belongs_to') ? $v['qkey'] : $schema['self']['pkeys'][0]['name'] )
+                );
             }// end foreach
-        }//end if
-
-        if (!empty($find['join'])) {
             
-            $loop = $find['join'];
-            foreach ($loop as $k => $v) {
-                if (!array_key_exists($k, $this->objects[$uid]['associations'])) continue;
-
-                /**
-                 * check if $k is associated module name
-                 */
-                $conditions = $v['find']['conditions'];
-                foreach ($conditions as $idx => $val) $conditions[$idx] = Db::BindVariable($idx, $val);
-
-                $conditions[$v['fkey']] = "`{$schema['self']['table']}`.`{$schema['self']['pkeys'][0]['name']}`";
-                $jointable = $v['sqljoin']($conditions);
-                unset($find['join'][$k]);
-
-                if (!empty($v)) $v = "AND {$v}";
-                foreach ($jointable as $table => $criteria)
-                    $find['join'][$table] = "{$criteria} {$v}";
-
-            }// end foreach
-
         }//end if
 
         /**
@@ -708,13 +694,8 @@ class ModelActions
             /**
              * restore the last select criteria
              */
-            $this->objects[$uid]['criteria'] = $retval['criteria'];
+            $obj->store('sqlcriteria', $retval['criteria']);
             return $retval;
-        }//end if
-
-        if ( $obj->is_parent === false && empty($find['columns']) ) {
-            $find['columns'][] = "{$this->models[$class]['schema']['parent']['table']}.*";
-            $find['columns'][] = "{$this->models[$class]['schema']['self']['table']}.*";
         }//end if
 
         /**
@@ -722,9 +703,6 @@ class ModelActions
          */
         $empty = true;
         
-        if (empty($find['custom_fields']))
-            $find['custom_fields'] = $obj::$Custom_Fields;
-
         try {
             $retval = self::Search($query, $schema, $db, $find);
             $empty = false;
@@ -739,7 +717,7 @@ class ModelActions
         /**
          * store the last select criteria
          */
-        $this->objects[$uid]['criteria'] = $retval['criteria'];
+        $obj->store('sqlcriteria', $retval['criteria']);
         $retval['schema'] = $schema['self'];
 
         /**
@@ -771,9 +749,8 @@ class ModelActions
             'conditions'    => array(), // additional search criteria
             'subquery'      => array(),
             'count'         => false,
-            'columns'       => array(),
             'join'          => array(),
-            'custom_fields' => array()
+            'select_fields' => array()
         );
 
 		extract($find_options, EXTR_SKIP);
@@ -814,12 +791,12 @@ class ModelActions
         $table_fields = $schema['fields'];
 
         if (count($find) != 0)
-            $match = self::BuildSearchSql($table_fields, $find, $custom_fields);
+            $match = self::BuildSearchSql($table_fields, $find, $select_fields);
         
 		if (count($subquery) != 0) {
 			foreach($subquery as $k=>$v) {
-				if (!is_string($v)) continue;
-				$match[] = "({$schema['self']['pkeys'][0]['name']} IN ({$v}))";
+				if (!is_string($v['sql']) && !empty($v['sql']) && !empty($v['key'])) continue;
+				$match[] = "({$v['key']} IN ({$v['sql']}))";
 			}//end foreach
 		}//end if
 
@@ -849,7 +826,7 @@ class ModelActions
 
 		if ($count === true)
 			return $cnt;
-
+        
         if ($cnt == 0)
             throw new Exception($schema['self']['table'].' [ '.$sql['count'].' ] results empty');
 
@@ -875,28 +852,29 @@ class ModelActions
         /**
          * column selection
          */
-        $cols = array("{$schema['self']['table']}.*");
-        
-        if (!empty($columns)) {
+        //$cols = array("{$schema['self']['table']}.*");
+        $cols = array("*");
+
+        if (!empty($select_fields)) {
             $cols = array();
-            
-            if (!is_array($columns)) $columns = explode(',', $columns);
-            
-            foreach ($columns as $k => $v) {
-                $v = trim($v);
-                if (!array_key_exists($v, $schema['fields']) && !in_array($v, $schema['fields'])) continue;
-                $cols[] = $v;
+
+            if (!is_array($select_fields)) $select_fields = explode(',', $select_fields);
+
+            foreach ($select_fields as $k => $v) {
+                
+                if (is_string($k)) {
+                    $cols[] = "{$v} as {$k}";
+                    continue;
+                }//end if
+
+                //if (!array_key_exists($v, $schema['fields']) && !in_array($v, $schema['fields'])) continue;
+                $cols[] = trim($v);
             }// end foreach
 
         }//end if
-
-        if (!empty($custom_fields)) {
-            foreach ($custom_fields as $k => $v)
-                $cols[] = "{$v} as {$k}";
-        }//end if
         
         $cols = implode(", ", $cols);
-
+        
 		$sql['select'] = "
         select {$cols}
 		from {$schema['self']['table']}
@@ -1136,48 +1114,48 @@ class ModelActions
      * @access
      * @var
      */
-    public function sanitize(Model $obj, array $raw)
-    {
-        list($class, $modulens, $name) = $this->ids($obj);
-        $schema = $this->models[$class]['schema']['self'];
-
-        $raw = Tools::Sanitize($raw, $schema['fields']);
-
-        return $raw;
-    }
+//    public function sanitize(Model $obj, array $raw)
+//    {
+//        list($class, $modulens, $name) = $this->ids($obj);
+//        $schema = $this->models[$class]['schema']['self'];
+//
+//        $raw = Tools::Sanitize($raw, $schema['fields']);
+//
+//        return $raw;
+//    }
 
     /**
      *
      * @access
      * @var
      */
-    public function validate(Model $obj, array $validations)
-    {
-        list($class, $modulens, $name) = $this->ids($obj);
-        $schema = $this->models[$class]['schema']['self'];
-        
-        if ($obj->is_parent === true)
-            $schema = $this->models[$class]['schema']['parent'];
-
-        /**
-         * automatically include primary keys that is not
-         * for autoincrement as required if not included
-         */
-        foreach ($schema['pkeys'] as $k => $v) {
-
-            /**
-             * we require primary keys that is not set for auto increment
-             */
-            if ($v['auto_increment'] === true) continue;
-
-            if (!empty($validations['required'][$v['name']])) continue;
-
-            $validations['required'][$v['name']] = "{$v['name']} is required";
-
-        }// end foreach
-
-        Tools::Validate($validations, $obj->result);
-    }
+//    public function validate(Model $obj, array $validations)
+//    {
+//        list($class, $modulens, $name) = $this->ids($obj);
+//        $schema = $this->models[$class]['schema']['self'];
+//
+//        if ($obj->is_associated === true)
+//            $schema = $this->models[$class]['schema'][$obj->uid];
+//
+//        /**
+//         * automatically include primary keys that is not
+//         * for autoincrement as required if not included
+//         */
+//        foreach ($schema['pkeys'] as $k => $v) {
+//
+//            /**
+//             * we require primary keys that is not set for auto increment
+//             */
+//            if ($v['auto_increment'] === true) continue;
+//
+//            if (!empty($validations['required'][$v['name']])) continue;
+//
+//            $validations['required'][$v['name']] = "{$v['name']} is required";
+//
+//        }// end foreach
+//
+//        Tools::Validate($validations, $obj->result);
+//    }
 
     /**
      *
@@ -1188,6 +1166,9 @@ class ModelActions
     {
         list($class, $modulens, $name) = $this->ids($obj);
         $schema = $this->models[$class]['schema']['self'];
+
+        if ($obj->is_associated === true) $schema = $this->models[$class]['schema'][$obj->uid];
+
         return $schema;
     }
 

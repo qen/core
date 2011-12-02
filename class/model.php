@@ -56,16 +56,14 @@
  */
 namespace Core;
 
-use \ArrayIterator;
 use \IteratorAggregate;
 use \ArrayAccess;
 
-use \Core\Exception;
-use \Core\Db;
+use Core\App\Module;
 
 class Model extends \Core\Base implements ArrayAccess, IteratorAggregate
 {
-
+    
     /**
      * this is the one that gets modified
      * and returned when the model->result or model->results
@@ -76,14 +74,21 @@ class Model extends \Core\Base implements ArrayAccess, IteratorAggregate
      * $iterator->key() tells which results element should be
      * returnted or modified
      */
-    private $iterator   = array();
-    private $ismodified = false;
-    private $isparent   = false;
+    private $iterator       = array();
+    private $isassociated   = false;
+    private $options        = array();
 
     /**
      * collections of all associated models
      */
     private $associations   = array();
+    private $associates     = array();
+
+    /**
+     * validate and sanitize objects
+     */
+    private $validate       = null;
+    private $sanitize       = null;
 
     /**
      * these static variables are the only
@@ -91,8 +96,6 @@ class Model extends \Core\Base implements ArrayAccess, IteratorAggregate
      */
     public static $Name          = '';
     public static $Table_Name    = '';
-    public static $Sanitize      = array();
-    public static $Custom_Fields = array();
     public static $Find_Options  = array(
         'selpage'       => 1,
         'limit'         => 20,
@@ -103,8 +106,8 @@ class Model extends \Core\Base implements ArrayAccess, IteratorAggregate
         'conditions'    => array(), // additional search criteria
         'subquery'      => array(),
         'count'         => false,
-        'columns'       => array(),
-        'join'          => array()
+        'join'          => array(),
+        'select_fields' => array(), // numeric index is table field name, string index is custom field name
     );
 
     /**
@@ -118,7 +121,8 @@ class Model extends \Core\Base implements ArrayAccess, IteratorAggregate
      */
     private $count      = 0;
     private $uid        = '';
-
+    private $changed    = array();
+    
     // ** start ** required interface functions
     public final function offsetExists($offset)
     {
@@ -150,10 +154,13 @@ class Model extends \Core\Base implements ArrayAccess, IteratorAggregate
 
     public final function offsetSet($offset, $value)
     {
-        $cleaned = ModelActions::Instance()->sanitize($this, array( "{$offset}" => $value ));
+        //$cleaned = ModelActions::Instance()->sanitize($this, array( "{$offset}" => $value ));
+        $sanitize   = $this->sanitize;
+        $cleaned    = $sanitize(array("{$offset}" => $value));
+
         $idx = $this->iterator->key();
-        $this->ismodified = true;
         $this->results[$idx][$offset] = $cleaned[$offset];
+        $this->changed[] = $offset;
     }
 
     public final function offsetUnset($offset)
@@ -164,130 +171,17 @@ class Model extends \Core\Base implements ArrayAccess, IteratorAggregate
 
     public final function getIterator()
     {
+        if ($this->is_associated)
+            $this->iterator->associated();
+        else
+            $this->iterator->object();
+        
         return $this->iterator;
     }
     // ** end ** required iterator functions
 
-    public final function __invoke($args = null, $params = null)
+    public final function __get($varname)
     {
-
-        if (empty($args)) {
-            $exc = new Exception('please use $obj->result');
-            $exc->traceup();
-            throw $exc;
-        }//end if
-
-        switch ($args) {
-            case 'key':
-                $exc = new Exception('please use $obj->resultkey');
-                $exc->traceup();
-                throw $exc;
-                break;
-
-            case 'all':
-                $exc = new Exception('please use $obj->results');
-                $exc->traceup();
-                throw $exc;
-                break;
-
-            case 'count':
-                $exc = new Exception('wtf you use this ?');
-                $exc->traceup();
-                throw $exc;
-                break;
-
-            case 'keys':
-                $exc = new Exception('please use $obj->resultkeys');
-                $exc->traceup();
-                throw $exc;
-                break;
-
-            default:
-                return null;
-                break;
-        }// end switch
-
-    }
-
-    public function __call($varname, $args)
-    {
-
-        /**
-         * this will allow the call like
-         * $this->AssociateModel(array('limit' => 20))->each()
-         */
-        if (array_key_exists($varname, $this->associations)) {
-            $assocate = $this->associations[$varname];
-
-            /**
-             * if arguments is empty or null
-             */
-            if (empty($args) || $this->isEmpty())
-                return $assocate['model'];
-
-            if ($args[0] === true)
-                $args = array();
-
-            /**
-             * get the current query value by default its the primary key
-             */
-            $query = $this[$assocate['query']];
-
-            /**
-             * if options is exactly all, pass all results query
-             */
-            if ('all' == $args[0]) {
-                $allresults = $this->results;
-                $query = array();
-                foreach ($allresults as $k => $v) {
-                    $query[] = $v[$assocate['query']];
-                }// end foreach
-            }//end if
-
-            /**
-             * otherwise use each function to modify all returned
-             * value from the associated model
-             */
-            if (!empty($query)) {
-
-                $options = (is_array($args[0]))? $args[0] : array();
-
-                $options['search'] = $assocate['fkey'];
-
-                /**
-                 * ignore error if there is no results
-                 */
-                try {
-                    $assocate['model']->find($query, $options);
-                } catch (Exception $exc) {
-                }//end try
-
-            }//end if
-
-            return $assocate['model'];
-        }//end if
-
-        parent::__call($varname, $args);
-    }
-
-    public function __get($varname)
-    {
-
-        /**
-         * varname association access gets priority over other variables
-         */
-        if (array_key_exists($varname, $this->associations)) {
-            $idx = $this->iterator->key();
-            if ($idx !== $this->associations[$varname]['model']->retrieve('parentidx')) {
-                $this->associations[$varname]['model']->store('parentidx', $idx);
-                /**
-                 * trigger the query call by passing a value true
-                 */
-                $this->$varname(true);
-            }//end if
-
-            return $this->associations[$varname]['model'];
-        }//end if
         
         switch ($varname) {
             case 'result':
@@ -308,6 +202,10 @@ class Model extends \Core\Base implements ArrayAccess, IteratorAggregate
             case 'resultkeys':
                 return $this->resultkeys;
                 break;
+            
+            case 'is_associated':
+                return $this->isassociated;
+                break;
 
             case 'uid':
                 return $this->uid;
@@ -317,24 +215,113 @@ class Model extends \Core\Base implements ArrayAccess, IteratorAggregate
                 return $this->count;
                 break;
 
-            case 'is_parent':
-                return $this->isparent;
-                break;
-
             case 'config':
                 return ModelActions::Instance()->config($this);
                 break;
 
+            case 'join':
+                $this->options['join'] = true;
+                return $this;
+                break;
+
+            case 'load':
+                $this->options['load'] = true;
+                return $this;
+                break;
+            
             default:
                 break;
         }// end switch
 
+        /**
+         * join associate model
+         */
+        if ($this->options['join'] === true) {
+            $this->options['join'] = false;
+            
+            if (!array_key_exists($varname, $this->associations)) {
+                $exc = new Exception("{$varname} is not a valid associate model");
+                $exc->traceup();
+                throw $exc;
+            }//end if
+
+            $join = $this->associations[$varname]['join'];
+            $fkey = $this->associations[$varname]['fkey'];
+            list($linktable, $linkkey) = $join['link'];
+            list($selftable, $selfkey) = $join['self'];
+            
+            if (!empty($join['with'])) {
+                list($jointable, $joinkey) = $join['with'];
+                
+                $this->options['find']['join']["{$jointable}"] = "`{$linktable}`.`{$linkkey}` = `{$jointable}`.`{$fkey}`";
+                $this->options['find']['join']["{$selftable}"] = "`{$selftable}`.`{$selfkey}` = `{$jointable}`.`{$selfkey}`";
+            }else{
+                
+            }//end if
+
+            return $this;
+        }//end if
+
+        /**
+         * eager loading
+         */
+        if ($this->options['load'] === true) {
+            $this->options['load'] = false;
+
+            if (!array_key_exists($varname, $this->associations)) {
+                $exc = new Exception("{$varname} is not a valid associate model");
+                $exc->traceup();
+                throw $exc;
+            }//end if
+
+            $this->options['find']['includes'][] = $varname;
+            return $this;
+        }//end if
+
+        /**
+         * if varname exists in associates but not in associations,
+         * initialize associate model
+         */
+        if (array_key_exists($varname, $this->associates) && !array_key_exists($varname, $this->associations)) 
+            $this->associate($varname);
+
+        /**
+         * check if varname association access
+         */
+        if (array_key_exists($varname, $this->associations)) {
+
+            /**
+             * if the returned parentidx is exactly false, then the intended
+             * result is to skip the query call and just return the associated model
+             *
+             * $this->AssociatedModel = false;
+             * $this->AssociatedModel->each();
+             *
+             * you must set the value to true to enable the query call on access like
+             * $this->AssociateModel = true;
+             * $this->AssociatedModel['id'];
+             */
+            $parentidx = $this->associations[$varname]['model']->retrieve('parentidx');
+            
+            if (false === $parentidx) return $this->associations[$varname]['model']->associated();
+            
+            $idx = $this->iterator->key();
+
+            /**
+             * query call here
+             */
+            if ($idx !== $parentidx)
+                $this->__set($varname, array());
+            
+            return $this->associations[$varname]['model']->associated();
+        }//end if
+
         return parent::__get($varname);
     }
 
-    public function __isset($name)
+    public final function __isset($name)
     {
-        if (array_key_exists($name, $this->associations)) return true;
+        if (array_key_exists($name, $this->associates)) return true;
 
         $respondto = array();
         $respondto[] = 'result';
@@ -343,87 +330,192 @@ class Model extends \Core\Base implements ArrayAccess, IteratorAggregate
         $respondto[] = 'results';
         $respondto[] = 'resultkey';
         $respondto[] = 'resultkeys';
-        $respondto[] = 'is_parent';
+        $respondto[] = 'is_associated';
         $respondto[] = 'config';
 
         return in_array($name, $respondto);
     }
 
-    public function __set($name, $model)
+    public final function __set($name, $value)
     {
-        if ($model instanceof Model) {
-            $associate  = $this->fireEvent('associate', array($name, $model));
-            $fkey       = $associate['foreign_key'];
-
-            if (empty($fkey)) {
-                $exc = new Exception($this::$Name.'> Please define a foreign_key for '.$name);
-                $exc->traceup();
-                throw $exc;
-            }//end if
-
-            $var = ModelActions::Instance()->associate($this, $model, $associate);
-            $var['fkey']    = $fkey;
-            $var['model']   = $model;
-
-            $this->associations[$name] = $var;
-
-            return $this;
-        }//end if
+        
+        /**
+         * if varname exists in associates but not in associations,
+         * initialize associate model
+         */
+        if (array_key_exists($name, $this->associates) && !array_key_exists($name, $this->associations))
+            $this->associate($name);
 
         /**
-         * if associated model and value is null, remove association
-         * on model only
+         * check if ModelAssociates
          */
-        if (array_key_exists($name, $this->associations) && is_null($model)) {
-            ModelActions::Instance()->disassociate($this, $this->$name());
-            $this->associations[$varname] = null;
+        if ($value instanceof ModelAssociates) {
+            $this->associates[$name] = $value;
+            return true;
+        }//end if
+            
+        
+        /**
+         * if associated model
+         */
+        if (array_key_exists($name, $this->associations)) {
+            $associate = $this->associations[$name];
+            /**
+             * if value is null remove association
+             */
+            if (is_null($value)) {
+                $this->associations[$name] = null;
+                unset($associate);
+                unset($this->associations[$name]);
+                return true;
+            }//end if
+
+            /**
+             * association query call if value is array
+             * 
+             * this will allow the call like
+             * $this->AssociateModel = array('limit' => 20);
+             * $this->AssociateModel->each();
+             * 
+             */
+            if (is_array($value)) {
+                $idx        = $this->iterator->key();
+                $args       = $value;
+
+                $associate['model']->store('parentidx', $idx);
+
+                /**
+                 * if empty or null
+                 */
+                if ($this->isEmpty()) return true;
+                
+                /**
+                 * get the current query value by default its the primary key
+                 */
+                //$query = $this[$associate['fkey']];
+                $query = $this->resultkey;
+
+                /**
+                 * if options is exactly all, pass all results query
+                 */
+                if ('all' == $args[0]) {
+                    $allresults = $this->results;
+                    $query = array();
+                    foreach ($allresults as $k => $v) {
+                        $query[] = $v[$associate['query']];
+                    }// end foreach
+                }//end if
+
+                /**
+                 * otherwise use each function to modify all returned
+                 * value from the associated model
+                 */
+                if (!empty($query)) {
+
+                    $options = $associate['find'];
+                    if (is_array($args[0]) && !empty($args[0]))
+                        $options = Tools::ArrayMerge($associate['find'], $args[0]);
+                    
+                    $options['search'] = $associate['fkey'];
+                    
+                    /**
+                     * ignore error if there is no results
+                     */
+                    try {
+                        $associate['model']->find($query, $options);
+                    } catch (Exception $exc) {
+                    }//end try
+
+                }//end if
+
+                return true;
+            }//end if
+
+            /**
+             * value is exactly false, this is like disable the query call on access
+             */
+            if (false === $value) {
+                $associate['model']->store('parentidx', false);
+                return true;
+            }//end if
+
+            /**
+             * value is exactly true, enable query call on access
+             */
+            if (true === $value) {
+                $associate['model']->store('parentidx', true);
+                return true;
+            }//end if
+
             return true;
         }//end if
 
-        return parent::__set($name);
+        return parent::__set($name, $value);
     }
 
     /**
-     *
-     * @access
-     * @var
+     * CONSTRUCTOR
      */
     public final function __construct(array $default_dbconnection)
     {
+
         $this->uid = Tools::Uuid();
+        $this->iterator = new ModelIterator($this);
         
         ModelActions::Instance()->load($this, $default_dbconnection);
-
-        /**
-         * isparent null means that the model
-         * is not extended from another model
-         *
-         * isparent is boolean either false or tru
-         * then the model is extended from a model
-         */
-        $this->isparent = null;
-        $class  = get_class($this);
-        $pclass = get_parent_class($class);
-
-        if ($pclass != 'Core\\Model') $this->isparent = false;
         
-        $this::$Name = ucfirst($this::$Name);
-        if (empty($this::$Name)) {
-            $name = explode('\\', $class);
-            
-            if (!is_null($this->isparent))
-                $name = explode('\\', $pclass);
-            
-            $this::$Name = array_pop($name);
+        $this->validate = new Validate;
+        $this->sanitize = new Sanitize;
 
-            if ($this::$Name == 'Base')
-                $this::$Name = array_pop($name);
-            
-        }//end if
-
-        $this->iterator = new ArrayIterator($this->results);
         parent::__construct();
 
+        /**
+         * sanitization setup 
+         */
+        $schema = ModelActions::Instance()->getSchema($this);
+        
+        /**
+         * default sanitization for field types
+         */
+        $sanitize = $this->sanitize;
+        foreach ($schema['fields'] as $name => $type) {
+            switch ($type) {
+                case 'date':
+                    $sanitize["{$name}"]->date = 'now';
+                    break;
+
+                case 'time':
+                    $sanitize["{$name}"]->time = 'now';
+                    break;
+
+                case 'datetime':
+                    $sanitize["{$name}"]->datetime = 'now';
+                    break;
+
+                case 'numeric':
+                    $sanitize["{$name}"]->numeric = 0;
+                    break;
+
+                default:
+                    if (preg_match("/char\(([0-9].+)\)/is", $type, $matches)) {
+                        $length = is_numeric($matches[1])? $matches[1] : 255;
+                        $sanitize["{$name}"]->char[$length] = '';
+                        continue;
+                    }//end if
+                    break;
+            }// end switch
+        }// end foreach
+
+        $sanitize->persist();
+        $this->sanitize($sanitize);
+        $sanitize->persist();
+
+    }
+
+    public final function __toString() {
+        list(, $name) = explode("Modules\\", $this->class);
+        $name = str_replace("\\", '.', $name);
+        return $name;
     }
 
     /**
@@ -434,6 +526,124 @@ class Model extends \Core\Base implements ArrayAccess, IteratorAggregate
     protected function initialize()
     {
 
+    }
+
+    /**
+     *
+     * @access
+     * @var
+     */
+    public final function associated()
+    {
+        $this->isassociated = true;
+        return $this;
+    }
+
+    /**
+     *
+     * @access
+     * @var
+     */
+    private function associate($varname, $doassociate = array())
+    {
+
+        if (!empty($doassociate['has_many']) || !empty($doassociate['belongs_to'])) 
+            $this->associates[$varname] =  $doassociate;
+        
+        /**
+         * has_many association will trigger save and delete
+         */
+        $module_model   = $this->associates[$varname]['has_many'];
+        $associateby    = 'has_many';
+        if (empty($module_model)) {
+            /**
+             * belongs_to will NOT trigger save and delete, it will only query the data associated,
+             * foreign_key definitions for belongs_to must be an existing field name of the current class
+             */
+            $module_model   = $this->associates[$varname]['belongs_to'];
+            $associateby    = 'belongs_to';
+        }//end if
+
+        /**
+         * skip model instantiation if object model is passed
+         */
+        if (!($module_model instanceof Model)) {
+
+            list($module_name, $model_klass) = explode('.', $module_model, 2);
+            if (empty($module_name) || empty($model_klass)) {
+                $exc = new Exception("Failed to do associations with {$varname}, module={$module_name} and model={$model_klass}");
+                $exc->traceup()->traceup();
+                throw $exc;
+            }//end if
+
+            $module_name = trim($module_name);
+            $model_klass = trim($model_klass);
+
+            try {
+                $model = Module::$module_name($model_klass);
+                $this->associates[$varname]['initialize']($model);
+            } catch (Exception $exc) {
+                $exc = new Exception("Failed to instantiate {$varname}, module={$module_name} and model={$model_klass}");
+                $exc->traceup();
+                throw $exc;
+            }//end try
+            
+        }//end if
+
+        $associate_options = array(
+            'associateby'   => $associateby,
+            'foreign_key'   => $this->associates[$varname]['foreign_key'],
+            'foreign_table' => '',
+            'find_options'  => $this->associates[$varname]['find_options'],
+        );
+
+        /**
+         * check for table definition in foreign_key value
+         */
+        list($ftable, $fkey) = explode('.', $associate_options['foreign_key']);
+        if (empty($fkey)) {
+            $fkey = $ftable; // the only passed value is the field name, expect the foreign key
+            $ftable = $model::$Table_Name; // set the model table name as the foreign table
+        }//end if
+
+        $associate_options['foreign_key'] = trim($fkey);
+        $associate_options['foreign_table'] = trim($ftable);
+
+        if (empty($associate_options['foreign_key'])) {
+            $exc = new Exception($this::$Name.'> Please define a foreign_key for '.$varname);
+            $exc->traceup();
+            throw $exc;
+        }//end if
+
+        $this->fireEvent('associate', array($varname, $model));
+
+        $this->associations[$varname] = ModelActions::Instance()->associate($this, $model, $associate_options);
+
+        /**
+         * fireEvent associatedby
+         */
+        $self = $this;
+        if ($associateby == 'has_many') 
+            $model->fireEvent('belongs_to', array($model::$Name, $self));
+        else
+            $model->fireEvent('has_many', array($model::$Name, $self));
+
+
+        return $this;
+    }
+
+    /**
+     *
+     * @access
+     * @var
+     */
+    protected final function isAssociated($check)
+    {
+        if ($check instanceof Model)
+            $check = $obj::$Name;
+
+        if (array_key_exists($check, $this->associations)) return true;
+        return false;
     }
 
     /**
@@ -480,44 +690,15 @@ class Model extends \Core\Base implements ArrayAccess, IteratorAggregate
      *
      * @access
      * @var
-     *
-     * you put all model associations here
-     * by calling $this->associate()
-     *
-     */
-    public function hasAssociations()
-    {
-        throw new Exception('hasAssociations is not defined');
-    }
-
-    /**
-     *
-     * @access
-     * @var
-     */
-    protected final function isAssociated($check)
-    {
-        if ($check instanceof Model)
-            $check = $obj::$Name;
-
-        if (array_key_exists($check, $this->associations)) return true;
-        return false;
-    }
-
-
-    /**
-     *
-     * @access
-     * @var
      */
     public final function clear($include_cache = false)
     {
         $this->results      = array();
         $this->resultkeys   = array();
-        $this->iterator     = new ArrayIterator($this->results);
         $this->count        = 0;
         $this->numpage      = array();
-        $this->ismodified   = false;
+        $this->changed      = array();
+        $this->isassociated = false;
 
         if ($include_cache === true)
             ModelActions::Instance()->clear($this);
@@ -528,6 +709,18 @@ class Model extends \Core\Base implements ArrayAccess, IteratorAggregate
             }// end foreach
         }//end if
 
+        return $this;
+    }
+
+    /**
+     *
+     * @access
+     * @var
+     */
+    public final function object()
+    {
+        $this->isassociated = false;
+        return $this;
     }
 
     /**
@@ -539,16 +732,14 @@ class Model extends \Core\Base implements ArrayAccess, IteratorAggregate
     {
         array_push($this->results, array());
         end($this->results);
-
-        $pos    = key($this->results);
-        $self   = $this;
-
-        $this->iterator = new ArrayIterator($this->results);
-        $this->iterator->seek($pos);
+        
+        $position = key($this->results);
+        $this->iterator->seek($position);
 
         if (!empty($data))
             $this->from($data);
 
+        $self = $this;
         $this->fireEvent('add', array($self));
 
         return $this;
@@ -583,8 +774,14 @@ class Model extends \Core\Base implements ArrayAccess, IteratorAggregate
      *
      * called on every save calls
      */
-    public function validate()
+    protected function validate(Validate $validate)
     {
+        
+    }
+
+    protected function sanitize(Sanitize $sanitize)
+    {
+        
     }
 
     /**
@@ -605,7 +802,7 @@ class Model extends \Core\Base implements ArrayAccess, IteratorAggregate
      */
     public final function isModified()
     {
-        return $this->ismodified;
+        return !empty($this->changed);
     }
 
     /**
@@ -619,43 +816,137 @@ class Model extends \Core\Base implements ArrayAccess, IteratorAggregate
         if ($this->isEmpty())
             throw new Exception($this->class.'> No data to save');
 
+        /**
+         * loop to association and find
+         * belongs_to associate
+         */
+        if (!empty($this->associations)) {
+
+            foreach ($this->associations as $k => $v) {
+
+                if ($v['model']->isEmpty() || $v['mode'] == 'has_many') continue;
+                /**
+                 * automatically assign the foreign_key to the primary key
+                 * of the belongs_to associate model
+                 */
+                $associate = $this->associates[$k];
+                $this["{$associate['foreign_key']}"] = $v['model']->resultkey;
+            }// end foreach
+
+        }//end if
+
+        $pkey       = ModelActions::Instance()->pkey($this);
+        $raw_idx    = $this->iterator->key();
+
         $self = $this;
-        $this->fireEvent('save', array($self));
+        $this->fireEvent('save', array($self, $this->sanitize));
 
         /**
-         * validate data
+         * no changed data, return here
          */
-        $this->validate();
+        if (!empty($this->changed)) {
 
-        /**
-         * prepare to write the data to db
-         */
-        $data = ModelActions::Instance()->save($this);
+            /**
+             * quite paranoid sanitization of data again
+             */
+            $sanitize = $this->sanitize;
+            $this->sanitize($sanitize);
+            $sanitize->persist();
 
-        foreach ($data as $k => $v) $this[$k] = $v;
+            $clean = $sanitize($this->results[$raw_idx]);
+            foreach ($clean as $k => $v) $this->results[$raw_idx][$k] = $v;
+
+            $save_data = $this->results[$raw_idx];
+            /**
+             * if pkey is passed then check if there are changed data
+             * and include field to update for those that was changed only
+             */
+            if (!empty($save_data[$pkey])) {
+
+                $save_data          = array();
+                $save_data[$pkey]   = $this->results[$raw_idx][$pkey];
+                foreach ($this->changed as $k => $fieldname)
+                    $save_data[$fieldname] = $this->results[$raw_idx][$fieldname];
+
+            }//end if
+
+            /**
+             * validate raw data
+             */
+            $validate = $this->validate;
+
+            /**
+             * default validation
+             *
+             * automatically include primary keys that is not
+             * for autoincrement as required if not included
+             */
+            $schema = ModelActions::Instance()->getSchema($this);
+            foreach ($schema['pkeys'] as $k => $v) {
+
+                /**
+                 * skip auto increment primary key
+                 */
+                if ($v['auto_increment'] === true)  continue;
+
+                /**
+                 * skip require unique key if it was NOT changed
+                 */
+                if (!in_array($v['name'], $this->changed)) continue;
+
+                /**
+                 * skip unique key requirement if primary key is NOT EMPTY
+                 */
+                if (!empty($save_data[$pkey])) continue;
+
+                $validate["{$v['name']}"]->require = "{$v['name']} is required";
+                $save_data["{$v['name']}"] = $this->results[$raw_idx]["{$v['name']}"];
+
+            }// end foreach
+
+            $this->validate($validate);
+            try {
+                $validate($this->results[$raw_idx], $this->changed);
+            } catch (Exception $exc) {
+                $exc->traceup();
+                throw $exc;
+            }//end try
+
+            /**
+             * prepare to write the data to db
+             */
+            $data = ModelActions::Instance()->save($this, $save_data);
+
+            //foreach ($data as $k => $v) $this[$k] = $v;
+            foreach ($data as $k => $v) $this->results[$raw_idx][$k] = $v;
+            
+        }//end if
+        
 
         /**
          * loop to all associations and then call save
          * pass $data to method call
          */
         if (!empty($this->associations)) {
-
+            $self = $this;
             foreach ($this->associations as $k => $v) {
-
-                if ($v['model']->isEmpty()) continue;
-
+                
+                if ($v['model']->isEmpty() || $v['mode'] == 'belongs_to') continue;
+                
                 /**
                  * loop to all model results and then call save
                  */
-                $v['model']->each(function($curr) use ($v){
-                    $v['model']->save();
+                $v['model']->each(function($curr) use ($v, $self){
+                    $v['model']["{$v['fkey']}"] = $self->resultkey;
+                    $v['model']->associated()->save();
                 });
 
             }// end foreach
 
         }//end if
 
-        $this->ismodified = false;
+        $this->changed      = array();
+        $this->isassociated = false;
         return $this;
     }
 
@@ -688,33 +979,38 @@ class Model extends \Core\Base implements ArrayAccess, IteratorAggregate
         $this->erase();
 
         /**
-         * loop to all associations and then call remove to all results
+         * loop to all has_many associations and then call remove to all results
          */
         if (!empty($this->associations)) {
 
             foreach ($this->associations as $k => $v) {
-                $model = $this->$k(true);
 
-                if ($model->isEmpty()) continue;
+                if ($v['mode'] == 'belongs_to') continue;
 
-                $model->each(function($data) use ($v) {
-                    $v['model']->remove()->store('parentidx', null);
-                });
+                $this->__set($k, array());
 
+                if ($this->$k->isEmpty()) continue;
+
+                $v['model']->each(function($data) use ($v) {
+                    $v['model']->associated()->remove();
+                })->store('parentidx', null);;
+
+                $this->$k = null;
+                
             }// end foreach
 
         }//end if
 
         ModelActions::Instance()->remove($this);
 
+        $this->isassociated = false;
         return $this;
     }
 
     /**
-     * test documentation
+     * 
      * @access
      * @var
-     *
      */
     public final function find($query = '*', array $options = array())
     {
@@ -728,6 +1024,9 @@ class Model extends \Core\Base implements ArrayAccess, IteratorAggregate
          * options parameters
          */
         $this->fireEvent('find', array($options));
+
+        if (is_array($this->options['find']) && !empty($this->options['find'])) 
+            $options = Tools::ArrayMerge($options, $this->options['find']);
 
         /**
          * this will group results depending
@@ -749,7 +1048,7 @@ class Model extends \Core\Base implements ArrayAccess, IteratorAggregate
             ModelActions::Instance()->clear($this);
             $this->is_cached = false;
         }//end if
-
+        
         /**
          * find criteria
          */
@@ -818,7 +1117,6 @@ class Model extends \Core\Base implements ArrayAccess, IteratorAggregate
         $this->results      = $results;
         $this->resultkeys   = $resultkeys;
 
-        $this->iterator     = new ArrayIterator($this->results);
         $this->iterator->rewind();
 
         /**
@@ -840,18 +1138,10 @@ class Model extends \Core\Base implements ArrayAccess, IteratorAggregate
 
         }//end if
 
-        $this->ismodified   = false;
+        $this->changed      = array();
+        $this->isassociated = false;
+        $this->options['find'] = array();
         return $this;
-    }
-
-    /**
-     *
-     * @access
-     * @var
-     */
-    public final function invoke($args=null, $params = null)
-    {
-        return $this($args, $params);
     }
 
     /**
@@ -868,15 +1158,18 @@ class Model extends \Core\Base implements ArrayAccess, IteratorAggregate
          * as the it's possible to modify the $data when
          * $each declares the parameter by reference
          */
-        #$this->iterator->rewind();
-        $this->iterator = new ArrayIterator($this->results);
+        $this->iterator->rewind();
 
+        $isassociated = $this->isassociated;
         foreach ($this as $k => $v) {
             $data = $this->results[$k];
+            $this->isassociated = $isassociated;
             $each($data);
         }// end foreach
 
         $this->iterator->rewind();
+        
+        return $this;
     }
 
     /**
@@ -886,7 +1179,8 @@ class Model extends \Core\Base implements ArrayAccess, IteratorAggregate
      */
     public final function collect($field_name)
     {
-        $this->iterator = new ArrayIterator($this->results);
+        $this->iterator->rewind();
+        
         $retval = array();
         foreach ($this as $k => $v)
             $retval[] = $v[$field_name];
@@ -897,31 +1191,98 @@ class Model extends \Core\Base implements ArrayAccess, IteratorAggregate
 
     }
 
-    protected function doValidations(array $validations)
+    /**
+     *
+     * @access
+     * @var
+     */
+    public static final function HasMany($class, $foreign_key, array $find_options = array(), $initialize = null)
     {
-        ModelActions::Instance()->validate($this, $validations);
+        return new HasMany($class, $foreign_key, $find_options, $initialize);
     }
-
 
     /**
      *
      * @access
      * @var
      */
-    public final function parent($function)
+    public static final function BelongsTo($class, $foreign_key, array $find_options = array(), $initialize = null)
     {
-        if (!is_callable($function)) return false;
-        
-        if (is_null($this->isparent)) {
-            $function($this);
-            return $this;
-        }//end if
-        
-        $this->isparent = true;
-        $function($this);
-        $this->isparent = false;
-
-        return $this;
+        return new BelongsTo($class, $foreign_key, $find_options, $initialize);
     }
+
+    /**
+     *
+     * @access
+     * @var
+     */
+    public function toArray()
+    {
+        $idx = $this->iterator->key();
+        return $this->results[$idx];
+    }
+
+}
+
+
+/**
+ *
+ * Abstract Model Associates
+ * 
+ */
+abstract class ModelAssociates implements ArrayAccess
+{
+
+    protected $parameters = array(
+        'class'         => null,
+        'foreign_key'   => null,
+        'find_options'  => null,
+        'initialize'    => null,
+    );
+
+    abstract protected function type();
+
+    public function offsetExists ( $offset )
+    {
+        if ($offset == $this->type()) return true;
+
+        $keys = array('foreign_key', 'find_options', 'initialize');
+        if (in_array($offset, $keys)) return true;
+
+        return false;
+    }
+    
+    public function offsetGet ( $offset ) {
+        if (!$this->offsetExists($offset)) return null;
+        
+        if ($offset == $this->type()) return $this->parameters['class'];
+
+        return $this->parameters[$offset];
+    }
+
+    public function offsetSet ( $offset , $value ) { }
+    public function offsetUnset ( $offset ) {}
+
+    public function __construct($class, $foreign_key, $find_options, $initialize = null)
+    {
+        $this->parameters['class']          = $class;
+        $this->parameters['foreign_key']    = $foreign_key;
+        $this->parameters['find_options']   = $find_options;
+        $this->parameters['initialize']     = $find_options;
+
+        if (!is_callable($initialize)) $initialize = function(){};
+
+        $this->parameters['initialize']     = $initialize;
+    }
+
+}
+
+class HasMany extends ModelAssociates {
+
+    public function type() { return 'has_many'; }
+}
+
+class BelongsTo extends ModelAssociates {
+    public function type() { return 'belongs_to'; }
 }
 
