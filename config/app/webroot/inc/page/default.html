@@ -1,0 +1,28 @@
+<% extends 'skin/base.html' %>
+<% block seo_meta %>
+  <% set meta = page.Metatags  %>
+  <% include 'inc/seo_header.html' %>
+<% endblock %>
+<% block seo_analytics %>
+  <% set meta = page.Metatags  %>
+  <% include 'inc/seo_header.html' %>
+<% endblock %>
+
+<% block header %>
+<meta property="og:title" content="<%= page.page_title %> "/>
+<meta property="og:site_name" content="<%= Account.acnt_title|default('Petal') %>"/>
+
+<% endblock %>
+
+
+<% block body %>
+<h1><%= page.page_title %></h1>
+<hr>
+<%= page.page_details|raw %>
+<br />
+<% if page.page_settings.form %>
+<% import 'inc/page/form.html' as form %>
+<%= form.html(page.page_settings.form, page_form_uuid) %>
+<% endif %>
+
+<% endblock %>

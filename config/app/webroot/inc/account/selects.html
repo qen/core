@@ -1,0 +1,91 @@
+<% macro timezones(id, name, value, class) %>
+  <% set timezones = [
+      {'name': '(GMT-12) International DateLine West', 'time': '-12 hours'},
+      {'name': '(GMT-11) Samoa', 'time': '-11 hours'},
+      {'name': '(GMT-10) Hawaii', 'time': '-10 hours'},
+      {'name': '(GMT-9) Alaska', 'time': '-9 hours'},
+      {'name': '(GMT-8) Pacific Time (US and Canada)', 'time': '-8 hours'},
+      {'name': '(GMT-7) Mountain Time (US and Canada)', 'time': '-7 hours'},
+      {'name': '(GMT-6) Central Time (US and Canada), Central America', 'time': '-6 hours'},
+      {'name': '(GMT-5) Eastern Time (US and Canada)', 'time': '-5 hours'},
+      {'name': '(GMT-4) Atlantic Time (Canada)', 'time': '-4 hours'},
+      {'name': '(GMT-3) Greenland, Brasilia, Buenos Aires, Georgetown', 'time': '-3 hours'},
+      {'name': '(GMT-2) Mid-Atlantic', 'time': '-2 hours'},
+      {'name': '(GMT-1) Azores', 'time': '-1 hours'},
+      {'name': '(GMT+0) UK, Ireland, Lisbon', 'time': '+0 hours'},
+      {'name': '(GMT+1) West Central Africa, Western Europe', 'time': '+1 hours'},
+      {'name': '(GMT+2) Greece, Egypt, parts of Africa', 'time': '+2 hours'},
+      {'name': '(GMT+3) Russia, Baghdad, Kuwait, Nairobi', 'time': '+3 hours'},
+      {'name': '(GMT+4) Abu Dhabi, Kabul', 'time': '+4 hours'},
+      {'name': '(GMT+5) Islamabad, Karachi', 'time': '+5 hours'},
+      {'name': '(GMT+6) Astana, Dhaka', 'time': '+6 hours'},
+      {'name': '(GMT+7) Bangkok, Rangoon', 'time': '+7 hours'},
+      {'name': '(GMT+8) Hong Kong, Singapore, Perth, Beijing', 'time': '+8 hours'},
+      {'name': '(GMT+9) Tokyo, Seoul', 'time': '+9 hours'},
+      {'name': '(GMT+10) Brisbane, Canberra, Sydney, Melbourne', 'time': '+10 hours'},
+      {'name': '(GMT+11) Soloman Islands', 'time': '+11 hours'},
+      {'name': '(GMT+12) New Zealand', 'time': '+12 hours'},
+      {'name': '(GMT+13) Nukualofa', 'time': '+13 hours'}
+  ] %>
+  <% set select = value|default('+0 hours') %>
+  <select id="<%= id %>" name="<%= name %>" class="<%= class %>">
+    <% for tz in timezones %>
+    <option value="<%= tz.time %>" <%= tz.time == select? 'selected' : '' %> ><%= tz.name %></option>
+    <% endfor %>
+  </select>
+<% endmacro %>
+
+<% macro countries(id, name, value, class) %>
+  <% set countries = [
+      {'name': 'Andorra', 'code': 'AD'},
+      {'name': 'Argentina', 'code': 'AR'},
+      {'name': 'Australia', 'code': 'AU'},
+      {'name': 'Austria', 'code': 'AT'},
+      {'name': 'Belgium', 'code': 'BE'},
+      {'name': 'Brazil', 'code': 'BR'},
+      {'name': 'Canada', 'code': 'CA'},
+      {'name': 'Cayman Islands', 'code': 'KY'},
+      {'name': 'Chile', 'code': 'CL'},
+      {'name': 'Costa Rica', 'code': 'CR'},
+      {'name': 'Croatia', 'code': 'HR'},
+      {'name': 'Czech Republic', 'code': 'CZ'},
+      {'name': 'Denmark', 'code': 'DK'},
+      {'name': 'France', 'code': 'FR'},
+      {'name': 'Germany', 'code': 'DE'},
+      {'name': 'Hong Kong', 'code': 'HK'},
+      {'name': 'Iceland', 'code': 'IS'},
+      {'name': 'India', 'code': 'IN'},
+      {'name': 'Indonesia', 'code': 'ID'},
+      {'name': 'Ireland', 'code': 'IE'},
+      {'name': 'Israel', 'code': 'IL'},
+      {'name': 'Italy', 'code': 'IT'},
+      {'name': 'Japan', 'code': 'JP'},
+      {'name': 'Korea, Republic of', 'code': 'KR'},
+      {'name': 'Lithuania', 'code': 'LT'},
+      {'name': 'Luxembourg', 'code': 'LU'},
+      {'name': 'Malaysia', 'code': 'MY'},
+      {'name': 'Maldives', 'code': 'MV'},
+      {'name': 'Mexico', 'code': 'MX'},
+      {'name': 'Namibia', 'code': 'NA'},
+      {'name': 'Netherlands', 'code': 'NL'},
+      {'name': 'New Zealand', 'code': 'NZ'},
+      {'name': 'Norway', 'code': 'NO'},
+      {'name': 'Philippines', 'code': 'PH'},
+      {'name': 'Russian Federation', 'code': 'RU'},
+      {'name': 'Singapore', 'code': 'SG'},
+      {'name': 'Spain', 'code': 'ES'},
+      {'name': 'Sweden', 'code': 'SE'},
+      {'name': 'Switzerland', 'code': 'CH'},
+      {'name': 'Thailand', 'code': 'TH'},
+      {'name': 'Turkey', 'code': 'TR'},
+      {'name': 'United Arab Emirates', 'code': 'AE'},
+      {'name': 'United Kingdom (Great Britain)', 'code': 'GB'},
+      {'name': 'United States', 'code': 'US'}
+  ] %>
+  <% set select = value|default('US') %>
+  <select id="<%= id %>" name="<%= name %>" class="<%= class %>">
+    <% for country in countries %>
+    <option value="<%= country.code %>" <%= country.code == select? 'selected' : '' %> ><%= country.name %></option>
+    <% endfor %>
+  </select>
+<% endmacro %>

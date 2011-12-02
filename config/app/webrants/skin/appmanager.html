@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en" xmlns:fb="http://www.facebook.com/2008/fbml">
+  <head>
+    <title><% block title %>Rants From Me AppManager<% endblock %></title>
+    <meta http-equiv="content-type" content="text/html; charset=utf-8" />
+    <meta http-equiv="cache-control" content="no-cache" />
+    <meta http-equiv="pragma" content="no-cache" />
+
+    <link rel="stylesheet" href="<%= params['uri']['root'] %>/minify/css/<% filter base64 %>
+          css/common/reset.css,
+          css/common/form.css,
+          css/common/typography.css,
+          css/appmanager/style.css,
+          js/mootools/FormCheck/theme/classic/formcheck.css,
+          js/mootools/Roar/Roar.css
+    <% endfilter %>" type="text/css" />
+    <script src="<%= params['uri']['root'] %>/js/mootools/1.2.4.js" language="javascript" type="text/javascript"></script>
+    <script src="<%= params['uri']['root'] %>/minify/js/<% filter base64 %>
+            js/appmanager/common.js,
+            js/mootools/FormCheck/lang/en.js,
+            js/mootools/FormCheck/FormCheck.js,
+            js/mootools/Roar/Roar.js,
+    <% endfilter %>" language="javascript" type="text/javascript"></script>
+    
+    <% block header %>
+    <% endblock %>
+    
+    <script language="javascript"><% filter jsminify|raw %>
+
+      var appvar = new Hash({});
+      var theRoar = null;
+      var requestURI = "<%= params['server']['REQUEST_URI'] %>";
+
+      <% filter pulltag('script')|raw %>
+      <% block jsinline %><% endblock %>
+      <% endfilter %>
+
+      window.addEvent('domready', function(){
+        
+        theRoar = new Roar({
+          position: 'upperRight',
+          duration: 9189
+        });
+
+        try {
+          $$('.theRoar').each(function(el){
+            var msg = el.get('html').trim();
+            if (msg == '') return true;
+            var title = 'Success';
+            (function(){
+              if (el.hasClass('error')){
+                theRoar.options.className = 'roar-alert';
+                title = 'Error';
+              }
+              theRoar.alert(title, msg);
+            }).delay(800);
+
+          });
+        } catch (e) {};
+
+        <% filter pulltag('script')|raw %>
+        <% block jsdomready %><% endblock %>
+        <% endfilter %>
+
+      });
+
+<% endfilter %></script>
+
+
+  </head>
+
+  <body>
+    <% block HTML %>
+    
+    <div style="display:none ">
+      
+      <div class="theRoar" >
+        <%= params['flash']['notify'] %>
+      </div>
+      
+      <div class="theRoar error" >
+        <%= params['flash']['errors'] %>
+      </div>
+      
+    </div>
+
+    <div class="gc_header">
+      <div id="gi_topMenu">
+        <% if params['session']['account'] %>
+        Welcome <a href="<%= params['uri']['root'] %>/appmanager/account"><%= params['session']['account']['acnt_name']|default('Intruder') %></a> | <a href="<%= params['uri']['root'] %>/appmanager/logout">Logout</a>
+        <% endif %>
+      </div>
+      <h1>Rants AppManager</h1>
+      <div id="gi_menu">
+        <% spaceless %>
+        <a href="<%= params['uri']['root'] %>/appmanager/blogs" class="nav">Blogs</a>
+        <a href="<%= params['uri']['root'] %>/appmanager/cms" class="nav">CMS</a>
+        <% endspaceless %>
+      </div>
+    </div>
+
+    <div class="gc_box">
+      <% block content %>
+      <h2><% block contentname %><% endblock %></h2>
+
+      <div class="menu">
+        <% block menu %>
+        <% endblock %>
+      </div>
+
+      <div class="body">
+        <br />
+        <% block body %>
+        <% endblock %>
+        <br />
+      </div>
+
+      <% endblock %>
+      <br />
+    </div>
+    <% endblock %>
+    <div style="display:none"><%= params['uri']|dump|raw %></div>
+  </body>
+</html>

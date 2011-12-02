@@ -1,0 +1,18 @@
+  <% if this['@notify.status'] or this['@notify.errors'] %>
+    <div style="display:none ">
+      <% if this['@notify.status'] %>
+      <div class="theRoar" >
+        <% for msg in this['@notify.status'] %>
+        <%= msg %><br>
+        <% endfor %>
+      </div>
+      <% endif %>
+      <% if this['@notify.errors'] %>
+      <div class="theRoar error" >
+        <% for msg in this['@notify.errors'] %>
+        <%= msg %><br>
+        <% endfor %>
+      </div>
+      <% endif %>
+    </div>
+  <% endif %>

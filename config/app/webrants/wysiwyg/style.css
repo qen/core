@@ -1,0 +1,45 @@
+html,body{
+	margin: 0px 10px 0px 0px;
+	padding: 0px 0px;
+	color: #333333;
+  font-family: 'lucida Grande',serif;
+  background-color:#E6E6E6;
+  font-size: 18px;
+  line-height: 24px;
+}
+div,p,li,td,th{
+	font-size: 18px;
+	text-align:justify;
+	color:#333;
+}
+table{
+	border-collapse:collapse;
+	border-spacing:0;
+}
+table td{
+	border:1px solid #999;
+	padding:2px 5px;
+}
+
+img {
+	margin:10px;
+	border:5px solid #ccc;
+}
+
+br {}
+
+p.quote {
+  border-left: 2px solid #ccc;
+  padding: 2px 18px;
+  color: #5f5f5f;
+  margin: 5px 0;
+}
+
+p.code {
+  background: none repeat scroll 0 0 #000000;
+  border: 1px inset #FFFFFF;
+  color: #CFCFCF;
+  font-family: monospace;
+  font-size: 12px;
+  padding: 2px 18px;
+}

@@ -1,0 +1,173 @@
+
+.form *, .form .normal{
+  font-family:Arial, Helvetica, sans-serif;
+  font-weight:normal;
+  font-size: 12px;
+}
+.form input, .form select, .form textarea, .form option, .form .input {
+  padding: 5px;
+  border: 1px inset #888;
+  border-color: #4b4b4b #999 #999 #4b4b4b;
+  width:240px;
+  background-color:#FBFBF3;
+  margin: 0 0 10px;
+  text-align:left;
+  height:18px;
+}
+.form fieldset{
+  border:none;
+  float:left;
+}
+
+.form input[type='checkbox'], .form input[type='radio'], .form input.radiocheckbox{
+  background:none;
+  border:none;
+  padding: 0px;
+  width:18px;
+  float:left;
+}
+.form input[type='submit'], .form input[type='button']{
+  -moz-border-radius: 24px 24px 24px 24px;
+  -webkit-border-radius: 24px 24px 24px 24px;
+  border-radius: 24px 24px 24px 24px;
+  background-color: #E66F00;
+  border: 1px outset #E66F00;
+  color: #FFFFFF;
+  cursor: pointer;
+  font-family: Verdana;
+  font-weight: bold;
+  height: auto;
+  padding: 3px;
+  text-align: center;
+  text-shadow: 0 0 1px #333333;
+  width: 100px;
+}
+
+.form input[type='submit']:active, .form input[type='button']:active{
+  border: 1px inset;
+  background: #ccc;
+  border-color: #333 #ccc #ccc #333;
+}
+
+.form input[type='file']{
+  /*margin-right: 55px;*/
+  height:auto;
+}
+
+.form input.tiny {
+  font-size:10px;
+  margin-bottom:0;
+  position:relative;
+  width:auto;
+  background-color:#D4D0C8;
+  border: 1px outset;
+  border-color: #ccc #333 #333 #ccc;
+  padding:3px;
+  cursor:pointer;
+  height:auto;
+  text-align:center;
+  -moz-border-radius: 0px;
+  -webkit-border-radius: 0px;
+  border-radius: 0px;
+  color: #333;
+  text-shadow: none;;
+}
+
+.form input.tiny:active{
+  border-color: #333 #ccc #ccc #333;
+  color: #555;
+}
+
+.form option{
+  border: none;
+  background:none;
+  padding: 0px 5px;
+}
+
+.form select {
+  height:auto;
+  width:auto;
+  padding:5px;
+}
+.form select option{
+  padding: 0 8px;
+  margin: 0px;
+  width:inherit;
+  cursor:pointer;
+}
+
+.form label, .form .label{
+  float: left;
+  text-align:right;
+  color:#5b5b5b;
+  font-weight:bold;
+  line-height: 16px;
+  margin: 0px 4px 10px 0px;
+  padding-right:11px;
+  width: 150px;
+}
+.form .labeltab, .form .indent{
+  /* label width + 15px */
+  margin-left:165px;
+}
+.form label em{
+  font-style:normal !important;
+  font-family:sans-serif;
+  font-size:11px;
+  /*color:#846666 !important;*/
+  color:#846666 !important;
+  display:block;
+}
+.form .labelblock{
+  border-color:#CCCCCC;
+  border-style:dotted;
+  border-width:1px 0;
+  background-color: #EBEBEB;
+  padding: 5px;
+  margin-bottom:10px;
+}
+.form .labelblock hr{
+  margin: 3px;
+}
+
+.form label.required{
+  background: transparent url('assets/asterisk.gif') no-repeat scroll right 1px;
+}
+.form label.requiredleft{
+  background: transparent url('assets/asterisk.gif') no-repeat scroll left 1px;
+}
+.form label b.required{
+  color:#FF0000;
+  font-size:14px;
+  margin:5px;
+}
+.form label.left{
+  text-align:left;
+  padding: 0px 0px 0px 15px;
+}
+.form input.left{
+  margin-left:15px;
+}
+.form label[for]{
+  cursor:pointer;
+}
+
+.form textarea {
+  width:auto;
+  height:auto;
+}
+
+.form label.overTxtLabel {
+  margin: 0px;
+  padding: 5px;
+  text-align: left;
+  color:#afafaf;
+  font-weight: normal;
+}
+
+.formfooter {
+    background: none repeat scroll 0 0 #EFEFEF;
+    border-top: 1px dotted #B7C995;
+    padding: 10px 10px 0;
+    text-align: right;
+}

@@ -1,0 +1,141 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+  <head>
+    <title>PlainTabs Sample Implementation</title>
+	<script type="text/javascript" src="../mootools.v1.11.js"></script>
+	<script type="text/javascript" src="../widgets/plaintabs.js"></script>
+    <script type="text/javascript" charset="utf-8">
+    //<![CDATA[
+      window.addEvent('domready', function() {
+        var plaintabs = new PlainTabs("plaintabs");
+        var plainnest = new PlainTabs("plainnest");
+      });
+    //]]>
+    </script>
+
+    <style type="text/css" media="screen">
+      body { margin: 50px; }
+      
+      div#header { padding: 5px; border: 1px solid #cccccc; text-align: center; }
+      div#header h1 { margin: 0; padding: 0; color: #999999; }
+      
+      p { font-size: 11pt; line-height: 1.3em; color: #333333; }
+      
+      div#plaintabs { margin: 0 50px; padding: 0; }
+      div#plaintabs > ul { margin: 0; padding: 0; display: block; list-style: none; }
+      div#plaintabs > ul > li { margin: 0 2px 0 0; padding: 5px 15px; display: block; background-color: #555555; float: left; }
+      div#plaintabs > ul > li.active { background-color: #000000; color: #ffffff; }
+      div#plaintabs > div { margin: 0; padding: 0 15px; background-color: #cccccc; border: 1px solid #000000; display: none; clear: both; }
+      div#plaintabs > div.active { display: block; }
+      
+      div#plainnest { margin: 0 50px; padding: 0; }
+      div#plainnest > ul { margin: 0; padding: 0; display: block; list-style: none; }
+      div#plainnest > ul > li { margin: 0 2px 0 0; padding: 5px 15px; display: block; background-color: #555555; float: left; }
+      div#plainnest > ul > li.active { background-color: #000000; color: #ffffff; }
+      div#plainnest > div { margin: 0; padding: 0 15px; background-color: #cccccc; border: 1px solid #000000; display: none; clear: both; }
+      div#plainnest > div.active { display: block; }
+      
+      div#footer { margin: 15px 0; padding: 5px; border: 1px solid #cccccc; text-align: center; }
+      div#footer p { margin: 0; padding: 0; font-size: 9pt; line-height: 1em; color: #999999; }
+    </style>
+  </head>
+  <body>
+    <div id="header">
+      <h1>PlainTabs Sample Implementation</h1>
+    </div>
+    <p>PlainTabs is another tabbed content extension for MooTools. The goal was to produce an extension that did not rely on CSS classes to tie together functionality. You should be able to produce tabbed content with cleaner markup using PlainTabs rather than MooTabs. This document serves as both a sample implementation and the distributed README for the PlainTabs extension to MooTools.</p>
+
+    <div id="plaintabs">
+      <ul>
+        <li>Installation</li>
+        <li>Implementation</li>
+        <li>Advanced Features</li>
+        <li>Credits &amp; License</li>
+
+      </ul>
+      <div>
+        <h2>Installation</h2>
+        <p>Just copy the <code>plaintabs.js</code> file into the appropriate folder of your web site. Then include the following script call in the <code>head</code> area of your web page:</p>
+        <blockquote><code>&lt;script src="plaintabs.js" type="text/javascript" charset="utf-8"&gt;&lt;/script&gt;</code></blockquote>
+
+        <p>Just make sure you correct the path for the <code>src</code> attribute.</p>
+        <p>That should be all that's needed to install the script, check out the implementation tab for what to do once you have installed the script.</p>
+      </div>
+      <div>
+        <h2>Implementation</h2>
+        <p>The best reference for implementation is the source to this file. But if you would rather read about it here than just read the source, then here you go:</p>
+
+        <h3>HTML Structure</h3>
+        <p>You should create your tab set using the following structure:</p>
+        <blockquote>
+          <code>
+            &lt;div id="wrapper"&gt;<br/>
+            &nbsp;&nbsp;&lt;ul&gt;<br/>
+            &nbsp;&nbsp;&nbsp;&nbsp;&lt;li&gt;Tab 1&lt;/li&gt;<br/>
+
+            &nbsp;&nbsp;&nbsp;&nbsp;&lt;li&gt;Tab 2&lt;/li&gt;<br/>
+            &nbsp;&nbsp;&nbsp;&nbsp;&lt;li&gt;Tab 3&lt;/li&gt;<br/>
+            &nbsp;&nbsp;&lt;/ul&gt;<br/>
+            &nbsp;&nbsp;&lt;div&gt;Panel 1&lt;/div&gt;<br/>
+
+            &nbsp;&nbsp;&lt;div&gt;Panel 2&lt;/div&gt;<br/>
+            &nbsp;&nbsp;&lt;div&gt;Panel 3&lt;/div&gt;<br/>
+            &lt;/div&gt;
+          </code>
+        </blockquote>
+
+        <p>The <code>id</code> attribute on the wrapper <code>div</code> is required and will be used as the handle to get a hold of the whole tab set. You should notice that compared to some other tab implementations there are not superfluous CSS classes or identifiers, just the one for the tab set. You can put whatever other markup you like inside the <code>li</code> and <code>div</code> tags, just do not fiddle with the basic structure inside the wrapper <code>div</code>.</p>
+
+        <p>Once you have the basic HTML structure down you can then actually setup the tabbed behavior by adding the following code within your web page's <code>head</code> area:</p>
+        <blockquote>
+          <code>
+            &lt;script type="text/javascript" charset="utf-8"&gt;<br/>
+            //&lt;![CDATA[<br/>
+
+            &nbsp;&nbsp;window.addEvent('domready', function() {<br/>
+            &nbsp;&nbsp;&nbsp;&nbsp;var tabSet = new PlainTabs("wrapper");<br/>
+            &nbsp;&nbsp;});<br/>
+            //]]&gt;<br/>
+            &lt;/script&gt;
+          </code>
+
+        </blockquote>
+        <p>Beyond that all you need to do is style the tab <code>ul</code> and <code>div</code> elements appropriately. Unless you tweak the defaults you can also define special styles for the active <code>li</code> and <code>div</code> areas.</p>
+
+        <p>To find out more about tweaking the default behavior check out the Advanced Features tab.</p>
+      </div>
+      <div>
+        <h2>Advanced Features</h2>
+        <h3>A Nest tabs example</h3>
+        <div id="plainnest">
+          <ul>
+
+            <li>Tab 1</li>
+            <li>Tab 2</li>
+            <li>Tab 3</li>
+          </ul>
+          <div><h4>Panel 1</h4></div>
+          <div><h4>Panel 2</h4></div>
+
+          <div><h4>Panel 3</h4></div>
+        </div>
+      </div>
+      <div>
+        <h2>Credits &amp; License</h2>
+        <p>This class was developed collaboratively by <a href="mailto:james@plainprograms.com">James Thompson</a> and <a href="mailto:shane@shanethacker.com">Shane Thacker</a>. Shane provided the structural concept for the HTML while James handled javascript implementation on top of the MooTools framework as well as conceptual refinements. This class is released under the terms of an MIT style license as listed below:</p>
+
+        <h3>License</h3>
+        <p><strong>Copyright &copy; 2007 <a href="http://www.plainprograms.com">Plain Programs, LLC</a></strong></p>
+        <p>Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:</p>
+        <p>The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.</p>
+        <p>THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.</p>
+
+      </div>
+    </div>
+    <div id="footer">
+      <p>Copyright &copy; 2007 &bull; <a href="http://www.plainprograms.com">Plain Programs, LLC</a> &bull; All Rights Reserved</p>
+    </div>
+
+  </body>
+</html>

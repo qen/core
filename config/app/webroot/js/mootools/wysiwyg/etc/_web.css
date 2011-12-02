@@ -1,0 +1,32 @@
+* {margin:0;padding:0}
+body{font-family:'Lucida Sans Unicode',Arial;background:#666;color:#333;overflow:auto}
+div,p,li,td,th{font-size:12px}
+li{margin-left:16px;}
+h1{color:#0061CA;text-align:center;padding-bottom:10px}
+h2{color:#000;font-size:16px;font-weight:normal;margin:20px 20px 0 20px}
+pre{background:#666; color:#fff; padding:10px; margin-top:10px; height:auto; overflow:auto}
+* html pre {width:100%}
+code{color:red}
+
+.description{padding:16px;margin:10px 20px;background:#eee}
+
+.links {padding:10px;margin-top:20px}
+.links a{font-size:14px;color:#0080FF;text-decoration:none}
+.links a:hover{font-weight:bold}
+
+#cont{
+	position:absolute;
+	width:776px;
+	top:20px;
+	padding:20px 0;
+	left:50%;
+	margin-left:-388px;
+	background:#fff;
+}
+.sample{
+	padding:0 20px;
+}
+
+.buttons{
+	padding:10px 0;
+}

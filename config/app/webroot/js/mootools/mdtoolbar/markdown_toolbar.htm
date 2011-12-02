@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+	"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+ <head>
+  <title>Markdown Toolbar for MooTools!</title>
+  
+  <link rel="stylesheet" href="markdown_toolbar.css" type="text/css" />
+
+  <script src="1.2.4-core.js" type="text/javascript"></script>
+  <script src="markdown_toolbar.js" type="text/javascript"></script>
+
+  <script type="text/javascript">  
+    window.addEvent('domready', function(){
+      $$('textarea.markdown').each(function(el){
+        MarkdownToolbar.add(el);
+      });
+    });
+  </script>
+
+ </head>
+ <body>
+  <div id="container">
+
+   <h1>Markdown Toolbar for MooTools!</h1> 
+   <form action="." method="post">
+
+     <textarea id="demo" name="text" rows="10" cols="25">
+markdown_toolbar.js
+-------------------
+
+I am using the fantastic javascript framework [MooTools](http://mootools.net) for most of my projects. I need a **sweet and simple** way for my clients to add [Markdown](http://daringfireball.net/projects/markdown/) markup, but the  awesome [Control.TextArea](http://livepipe.net/projects/control_textarea/) was sadly not compatible with MooTools. 
+
+The reason for this is that Prototype.js and MooTools doesn't play well with each other (method overloading issues for example)
+
+So after a few hours of fiddling around, here is the **first version** of [markdown_toolbar.js](./js/markdown_toolbar.0.0.1.js)!
+
+ * Basic functionality
+ * lists will arrive later.. it's 5:am here in Sweden
+
+*I have tried to keep as much as possible from Control.TextArea*
+
+	-- Peter Hellberg, Code7 Interactive</textarea>
+     <br />
+     <input type="submit" value="Markdown!" />
+   </form>
+
+   <div id="markdown_output"><h2>markdown_toolbar.js</h2>
+
+<p>I am using the fantastic javascript framework <a href="http://mootools.net">MooTools</a> for most of my projects. I need a <strong>sweet and simple</strong> way for my clients to add <a href="http://daringfireball.net/projects/markdown/">Markdown</a> markup, but the  awesome <a href="http://livepipe.net/projects/control_textarea/">Control.TextArea</a> was sadly not compatible with MooTools. </p>
+
+<p>The reason for this is that Prototype.js and MooTools doesn't play well with each other (method overloading issues for example)</p>
+
+<p>So after a few hours of fiddling around, here is the <strong>first version</strong> of <a href="./js/markdown_toolbar.0.0.1.js">markdown_toolbar.js</a>!</p>
+
+<ul>
+<li>Basic functionality</li>
+<li>lists will arrive later.. it's 5:am here in Sweden</li>
+</ul>
+
+<p><em>I have tried to keep as much as possible from Control.TextArea</em></p>
+
+<pre><code>-- Peter Hellberg, Code7 Interactive
+</code></pre>
+</div>  </div>
+ </body>
+</html>

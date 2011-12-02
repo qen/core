@@ -1,0 +1,57 @@
+<% extends 'skin/rants.html' %>
+<% import 'inc/pagenav.html' as pagenav %>
+
+<% block header %>
+<meta property="og:title" content="Qen empaces web developer's rants "/>
+<meta property="og:site_name" content="rantsfrom.me"/>
+<%= pagenav.css() %>
+<% endblock %>
+
+<% block seo_meta %>
+  <% set seo_page_title = blogs.Metatags.page_title %>
+  <% if seo_page_title is blank %>
+    <% set seo_page_title = blogs.blog_title %>
+  <% endif %>
+
+  <% set seo_meta_descr = blogs.Metatags.meta_descr %>
+  <% if seo_meta_descr is blank %>
+    <% set seo_meta_descr = blogs.blog_descr %>
+  <% endif %>
+
+  <% set seo_meta_keywords = blogs.Metatags.meta_keywords %>
+  
+  <% include 'inc/seo_header.html' %>
+<% endblock %>
+
+<% block jsdomready %>
+<script type="text/javascript">
+
+</script>
+<% endblock %>
+
+
+<% block body %>
+  <br />
+  <% for blog in blogs %>
+  <div class="posttitle">
+  <a href="<%= params['uri']['path'] %>/post/<%= blog.blog_url %>"><h2><%= blog.blog_title %></h2></a>
+  <div class="postinfo" >
+    <i class="postby"><%= blog.blog_date|date('Y') %><br/><span><%= blog.blog_date|date('m.d') %></span></i>
+    <div class="tags">
+      <% for tag in blogs.Tags %>
+      <% if cur_tag != tag.tag_name %>
+        <a href="<%= params['uri']['path'] %>/tag/<%= tag.tag_name %>"><%= tag.tag_name %></a>
+      <% endif %>
+      <% endfor %>
+    </div>
+  </div>
+  </div>
+  <div class="postcontent">
+  <%= blog.blog_details|markdown|raw %>
+  </div>
+  
+  <br class="break" />
+  
+  <% endfor %>
+  <%= pagenav.html(blogs.numpage) %>
+<% endblock %>

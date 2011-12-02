@@ -1,0 +1,35 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1" />
+<title>Calendar thingy</title>
+<link href="calendarthingy2.css" rel="stylesheet" type="text/css"/>
+
+<script src="../../1.2.1.js"></script>
+<script src="calendarthingy.js"></script>
+<script>
+window.addEvent('domready', function(){
+	new CalendarThingy($('cal'), {
+		date_initialize: function(el, a){
+		},
+		date_mouseclick: function(el, a){
+		}
+	}).build();
+	//1980-08-27
+	CalendarThingy.createPopUp($('cal_poopup'), {date_mouseclick: function(el, a){ alert(a) }});
+
+});
+
+</script>
+</head>
+
+<body>
+
+<div id="cal" style="">
+</div>
+
+<p>testseteststst</p>
+
+<a id="cal_poopup" href="#">poopup</a>
+</body>
+</html>

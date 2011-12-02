@@ -1,0 +1,56 @@
+<% extends 'skin/appmanager.html' %>
+<% import 'inc/pagenav.html' as pagenav %>
+
+<% block header %>
+<%= pagenav.css() %>
+<style type="text/css">
+a.page {
+    background:none repeat scroll 0 0 #f0f0f0;
+    border:1px solid #ddd;
+    color:#888888;
+    margin:10px auto;
+    padding:8px;
+    width:100%;
+    font-family: Georgia,"Times New Roman";
+    font-size: 18px;
+    display:block;
+}
+a.page:hover{
+    border:1px solid #ff9900;
+    text-decoration: none;
+}
+a.page p {
+    font-size: 12px;
+}
+a.page h5 {
+  color: #ff9900;
+  margin: 0px;
+}
+a.page:hover{
+  background-color:#FBFBF3;
+}
+a.page:hover h5 {
+  text-decoration: underline;
+  color: #333;
+}
+</style>
+<% endblock %>
+<% block content %>
+  <h2>CMS</h2>
+  <br />
+  <% if result %>
+  <div style="width:700px; margin:0 auto;">
+      <% for item in result %>
+      <a class="page" rel="add" href="<%= params['uri']['path'] %>/page/edit?url=<%= result.page_url|url_encode %>">
+        <h5><%= item.page_title %></h5>
+        <p>
+          <sup><%= item.page_url %></sup><br />
+          <%= item.page_descr %>
+        </p>
+      </a>
+      <% endfor %>
+  </div>
+  <%= pagenav.html(result.numpage) %>
+  <% endif %>
+  
+<% endblock %>

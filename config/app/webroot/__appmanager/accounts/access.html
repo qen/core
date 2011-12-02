@@ -1,0 +1,55 @@
+<br />
+<form class="form " action="<%= Uri.path %>/save" method="post" enctype="multipart/form-data" autocomplete="off">
+    <input name="d[accessid]" value="<%= details.accessid|default(0) %>" type="hidden" />
+    <input name="d[acc_typestat][]" value="0" type="hidden" />
+    <h3><a name="top"></a>
+    <%= details.accessid ? 'Access ID #' ~ details.accessid : 'Add Access' %>
+    </h3>
+    <hr />
+
+    <label class="required" >Name</label>
+    <input name="d[acc_name]" type="text" value="<%= details.acc_name %>"  class="validate['required'] " /><br />
+    <label class="" ></label> <div class="fL" style="width:300px">
+      <input name="d[acc_typestat][]" value="1" type="checkbox" class="left typestat" id="typebitaccess1"<%= ( details.acc_typestat AND 1 ) ? 'checked' : '' %> /><label class="left normal" for="typebitaccess1" >Active</label><br />
+      <input name="d[acc_typestat][]" value="2" type="checkbox" class="left typestat" id="typebitaccess2"<%= ( details.acc_typestat AND 2 ) ? 'checked' : '' %> /><label class="left normal" for="typebitaccess2" >Suspend</label><br />
+      <input name="d[acc_typestat][]" value="4" type="checkbox" class="left typestat" id="typebitaccess4"<%= ( details.acc_typestat AND 4 ) ? 'checked' : '' %> /><label class="left normal" for="typebitaccess4" >Pending</label><br />
+    </div><br />
+    <br />
+    <label class="required" >UID<em>Unique ID</em></label>
+    <input name="d[acc_uid]" type="text" value="<%= details.acc_uid %>"  class="validate['required','digit'] " /><br />
+
+    <label class="required" >Code</label>
+    <input name="d[acc_code]" type="text" value="<%= details.acc_code %>"  class=" " /><br />
+
+    <label class="" >Description</label>
+    <input name="d[acc_descr]" type="text" value="<%= details.acc_descr %>"  class=" " /><br />
+    <% if details.accessid %>
+    <label class="">Expire</label>
+    <input name="d[acc_date_expire]" type="text" value="<%= details.acc_date_expire %>" class="_DatePicker"  /><br />
+
+    <label class="" >Access Group</label>
+    <input name="d[acc_group]" type="text" value="<%= details.acc_group %>"  class=" " /><br />
+
+    <label class="" >Access Referral</label>
+    <input name="d[referral]" type="text" value="<%= details.referral %>"  class=" " /><br />
+
+    <label class="" >Access Source</label>
+    <input name="d[acc_source]" type="text" value="<%= details.acc_source %>"  class=" " /><br />
+    <br />
+    <hr />
+    <input value="Save" type="submit" class="fR" style="margin-right: 18px;" />
+    <br />
+    <br />
+    <br />
+    <br />
+    <h3 class="" >Access Settings</h3>
+    <hr>
+    <label>Yaml Config</label>
+    <textarea name="d[acc_settings]" cols="45" rows="24" style="font-family:'Courier New', Courier, monospace"><%= details.acc_settings %></textarea>
+    <br />
+    <% endif %>
+    <hr />
+    <input value="Save" type="submit" class="fR" style="margin-right: 18px;" />
+    <br />
+    <br />
+</form>

@@ -1,0 +1,360 @@
+<% macro html(lists, name, text_name, text_id) %>
+<fieldset class="textsearch">
+    <% for item in lists %>
+    <a><span><%= item[text_name] %></span><input name="<%= name %>[]" type="hidden" value="<%= item[text_id] %>"  /></a>
+    <% endfor %>
+    <input class="query" type="text" value="" /><br /><br />
+    <ul class='textsearchresults' style="display: none; z-index: 1;">
+    </ul>
+</fieldset>
+<% endmacro %>
+
+<% macro css(Uri) %>
+<style type="text/css">
+  fieldset.textsearch {
+    background:none no-repeat bottom center scroll #FBFBF3;
+    border:1px inset #999;
+    width: 444px;
+    margin:0 0 10px;
+    padding:5px;
+    text-align:left;
+    position: relative;
+    cursor: text;
+  }
+  fieldset.textsearch input {
+    border: none;
+    background: transparent;
+    padding: 0px;
+    float: left;
+    width: 100px;
+  }
+  fieldset.textsearch a {
+    height: 18px;
+    display: block;
+    float:left;
+    margin:0 14px 5px 0;
+    position:relative;
+    padding: 0;
+    -moz-border-radius-topleft: 18px;
+    -moz-border-radius-topright: 4px;
+    -moz-border-radius-bottomright: 4px;
+    -moz-border-radius-bottomleft: 18px;
+    border-top-left-radius: 40px 18px;
+    border-top-right-radius: 4px;
+    border-bottom-right-radius: 4px;
+    border-bottom-left-radius: 40px 18px;
+    background: #E66F00;
+    color:#fff;
+    
+  }
+  fieldset.textsearch a span {
+    display:block;
+    font-size:12px;
+    font-weight:bold;
+    height:18px;
+    left:9px;
+    padding-right:18px;
+    position:relative;
+    white-space: nowrap;
+    line-height:18px;
+    list-style: disc inside none;
+    display: list-item;
+  }
+  fieldset.textsearch a:hover, fieldset.textsearch a.selected{
+    background-color: #787878;
+    text-decoration:none;
+    color: #fff;
+  }
+  fieldset.textsearch a:hover span, fieldset.textsearch a.selected span{
+    background:url("<%= Uri.root %>/inc/ui/assets/Remove_16x16.png") no-repeat scroll right center transparent;
+    
+  }
+
+  fieldset.textsearch ul.textsearchresults{
+    background: none no-repeat top center scroll #F8F8F8;
+    border-color: #BEBEBE #CCCCCC #FFFFFF;
+    border-style: dashed inset outset;
+    border-width: 1px;
+    display: none;
+    margin: 5px 0 0 -6px;
+    padding: 5px;
+    position: absolute;
+    width: 444px;
+
+  }
+
+  fieldset.textsearch ul.textsearchresults li {
+    padding:3px;
+    background-color:transparent;
+    border:none;
+    color:#576875;
+    list-style:none;
+    cursor: pointer;
+    text-transform: capitalize;
+  }
+
+  fieldset.textsearch ul.textsearchresults li.selected{
+    background: #F0EEE4;
+    color:#000;
+  }
+  
+  fieldset.loadergif {
+    background-image: url('<%= Uri.root %>/inc/ui/assets/loader-hoz.gif');
+  }
+</style>
+<% endmacro %>
+
+<% macro js() %>
+<script language="javascript" >
+var TextSearch = {
+  'url' : '',
+  'post': function(value){
+    return { 'search' :  value}
+  },
+  'li': function(el){
+    alert('Please return a hash value for li');
+  },
+  'name'  : function(input){
+    return 'name';
+  },
+  'input_enter': function(){
+  },
+  'events' : {
+    'deselect': {
+      'click' : function(){
+        this.destroy();
+      },
+      'mouseleave': function(){
+        this.removeClass('selected');
+      }
+    },
+    'select':{
+      'mouseenter': function(){
+        try {
+          this.getParent('ul').getElements('li.selected').removeClass('selected');
+        } catch (e) {}
+        //this.getParent('ul').getPrevious('input.query').set('value', this.get('html'));
+        this.addClass('selected');
+      },
+      'click': function(){
+        var name = TextSearch.name(input);
+
+        try {
+          var input = this.getParent('ul').getPrevious('input.query');
+          var html = this.get('html');
+          var value = this.get('rel');
+          var id = this.get('id');
+        } catch (e) {
+          var input = this;
+          var html = this.get('value');
+          var value = html;
+          var id = html+'_'+name;
+        }
+
+        if ($(id)) return false;
+
+        var a = new Element('a', {
+          'html': '<span>'+html+'</span><input type="hidden" name="'+name+'[]" value="'+value+'">',
+          'id': id
+        });
+
+        a.addEvents(TextSearch.events.deselect);
+        a.inject(input, 'before');
+
+        input.set('value', '');
+
+        try {
+          this.getParent('ul').empty();
+        } catch (e) {}
+
+      }
+    }
+  },
+  'focus' : [],
+  'requestQue' : new Request.Queue({	onComplete: function(name, instance, text, xml){}	}),
+  'requestQuery' : new Request.JSON({
+    'url': 'textsearch/query',
+    'method': 'get',
+    'onComplete': function(data){
+
+      try {
+        var container = TextSearch.focus.getNext('ul.textsearchresults');
+      } catch (e) {
+        return false;
+      }// end try
+
+      //container.removeClass('loadergif');
+      TextSearch.focus.getParent('fieldset').removeClass('loadergif');
+      container.empty();
+      
+      if (data.status == 'failed'){
+        //TextSearch.search_empty.bind(container.getPrevious('input.query'))();
+        container.setStyle('display', 'none');
+        return;
+      }
+
+      data.result.each(function(el){
+
+        var h = TextSearch.li.bind(container)(el);
+        if (h == false) return;
+
+        var li = new Element('li', h);
+
+        li.addEvents(TextSearch.events.select);
+        container.adopt(li);
+      });
+
+      container.setStyle('display', 'block');
+
+    }
+
+  }),
+  'init': function(){
+
+    $$('fieldset.textsearch').addEvents({
+      'click': function(){
+        this.getElement('input.query').focus();
+      }
+    });
+
+    $$('fieldset.textsearch a').addEvents(TextSearch.events.deselect);
+
+    TextSearch.requestQue.addRequest('TextSearch.requestQuery', TextSearch.requestQuery);
+
+    $$('fieldset.textsearch input.query').addEvents({
+
+      'search': function(){
+
+        TextSearch.requestQue.clear('TextSearch.requestQuery');
+        TextSearch.requestQue.cancel('TextSearch.requestQuery');
+
+        //this.getNext('ul.textsearchresults').addClass('loadergif').setStyle('display', 'block');
+        //this.getNext('ul.textsearchresults').setStyle('display', 'block');
+        this.getParent('fieldset').addClass('loadergif');
+        
+        TextSearch.focus = this;
+        $clear(this.retrieve('textsearch_delay'));
+        this.store('textsearch_delay', (function(){
+          TextSearch.requestQuery.send({
+            'url': TextSearch.url,
+            'data': TextSearch.post(this.get('value'))
+          });
+        }).delay(1800, this));
+        
+      },
+      'keypress': function(evnt){
+
+        if (evnt.key == 'backspace' && this.get('value') == '') {
+          try {
+            this.getPrevious('a.selected').fireEvent('click');
+          } catch (e) {
+            try {
+              this.getPrevious('a').addClass('selected');
+            } catch (e) {}
+          }
+
+          evnt.stop();
+          evnt.stopPropagation();
+          return false;
+        }
+
+        if (evnt.key == 'enter'){
+          try {
+            this.getNext('ul.textsearchresults').getElement('li.selected').fireEvent('click');
+          } catch (e) {}
+
+          TextSearch.input_enter.bind(this)();
+
+          TextSearch.requestQue.clear('TextSearch.requestQuery');
+          TextSearch.requestQue.cancel('TextSearch.requestQuery');
+          $clear(this.retrieve('textsearch_delay'));
+          this.getNext('ul.textsearchresults').setStyle('display', 'none');
+          this.getParent('fieldset').removeClass('loadergif');
+  
+          evnt.stop();
+          evnt.stopPropagation();
+          return false;
+        }//end if
+
+        if (evnt.key == 'right' && this.getNext('ul.textsearchresults').getElement('li.selected').length != 0) {
+          this.getNext('ul.textsearchresults').getElement('li.selected').fireEvent('click');
+          evnt.stop();
+          evnt.stopPropagation();
+          return false;
+        }//end if
+
+
+        if (evnt.key == 'down' || evnt.key == 'up') {
+          var ul = this.getNext('ul.textsearchresults');
+
+          try {
+            if (evnt.key == 'down')
+              ul.getElement('li.selected').removeClass('selected').getNext('li').addClass('selected');
+            else
+              ul.getElement('li.selected').removeClass('selected').getPrevious('li').addClass('selected');
+
+          } catch (e) {
+            ul.getElement('li').addClass('selected');
+          }//end try
+
+          //this.set('value', ul.getElement('li.selected').get('html'));
+
+          evnt.stop();
+          evnt.stopPropagation();
+          return false;
+        }
+
+        if (evnt.key == 'esc') {
+          this.getNext('ul.textsearchresults').setStyle('display', 'none');
+          try {
+            this.getPrevious('a.selected').removeClass('selected');
+          } catch (e) {};
+          evnt.stop();
+          evnt.stopPropagation();
+          return false;
+        }
+
+      },
+      'keyup': function(evnt){
+        if (evnt.key == 'down' || evnt.key == 'up' || evnt.key == 'enter') {
+          evnt.stop();
+          evnt.stopPropagation();
+          return false;
+        }
+
+        if (this.get('value').length >= 1)
+          try {
+            this.getPrevious('a.selected').removeClass('selected');
+          } catch (e) {}
+
+        if (this.get('value').length >= 3) {
+          this.fireEvent('search');
+        }else{
+          $clear(this.retrieve('textsearch_delay'));
+          this.getNext('ul.textsearchresults').empty().setStyle('display', 'none');
+          this.getParent('fieldset').removeClass('loadergif');
+        }//end if
+
+      },
+      'blur': function(){
+        (function(){
+          this.getNext('ul.textsearchresults').setStyle('display', 'none');
+          //this.getNext('ul.textsearchresults').empty();
+          try {
+            this.getPrevious('a.selected').removeClass('selected');
+          } catch (e) {}
+        }).delay(180, this);
+      },
+      'focus': function(){
+        if (this.getNext('ul.textsearchresults').getElements('li').length != 0) {
+          this.getNext('ul.textsearchresults').setStyle('display', 'block');
+        }
+        this.getParent('fieldset').removeClass('loadergif');
+      }
+    });
+
+  }
+};
+</script>
+<% endmacro %>
+

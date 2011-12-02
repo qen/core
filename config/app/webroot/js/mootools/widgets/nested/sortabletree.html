@@ -1,0 +1,49 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html>
+	<head>
+		<script src="../../mootools-1.2.1-core.js" language="javascript" type="text/javascript"></script>
+		<script src="../../mootools-1.2-more.js" language="javascript" type="text/javascript"></script>
+		<script src="Nested.js" language="javascript" type="text/javascript"></script>
+		<script language="javascript" type="text/javascript">
+			window.addEvent('domready', function(){
+				/*
+				$$('#contain li').each(function(element){
+					// Change cursor
+					element.setStyle('cursor', 'move');
+ 
+					// Make them draggable
+					new Drag.Tree({contain: 'contain', target: element, marker: 'marker', depth: {difference: 0}});
+				});
+				*/
+				new Nested('contain');
+			});
+		</script>
+		<style>
+		ul#contain li {
+			cursor: pointer;
+		}
+		</style>
+	</head>
+	<body>
+		<div id="marker" style="display: none; opacity: 0; background-color: #e9e9e9"></div>
+		<ul id="contain">
+            <li class="section">Section 1
+            	<ul>
+            		<li class="question">Question 1</li>
+            		<li class="question">Question 2</li>
+            		<li class="question">Question 3</li>
+            		<li class="question">Question 4</li>
+            		<li class="question">Question 5</li>
+            	</ul>
+            </li>
+            <li class="section">Section 2
+            	<ul>
+            		<li class="question">Question 1</li>
+            		<li class="question">Question 2</li>
+            		<li class="question">Question 3</li>
+            		<li class="question">Question 4</li>
+            	</ul>
+            </li>
+        </ul>
+	</body>
+</html>

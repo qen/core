@@ -1,0 +1,89 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1" />
+<title>Drag Document</title>
+<script type="text/javascript" src="../mootools.v1.11.js"></script>
+
+</head>
+<style>
+#draggables {
+	height: 100px;
+	position: relative;
+}
+ 
+#draggables div {
+	top: 10px;
+	left: 10px;
+	width: 50px;
+	height: 50px;
+	cursor: move;
+	background: #c17878;
+	position: absolute;
+}
+ 
+ 
+#droppables div {
+	float: left;
+	margin: 10px;
+	width: 100px;
+	height: 100px;
+	background: #1d1d20;
+}
+</style>
+<body>
+<div id="draggables">
+	<div class="drag"></div>
+	<div class="drag"></div>
+	<div class="drag"></div>
+	<div class="drag"></div>
+	<div class="drag"></div>
+	<div class="drag"></div>
+	<div class="drag"></div>
+	<div class="drag"></div>
+	<div class="drag"></div>
+	<div class="drag"></div>
+</div>
+<div id="droppables">
+	<div class="drop"></div>
+	<div class="drop"></div>
+	<div class="drop"></div>
+	<div class="drop"></div>
+	<div class="drop"></div>
+	<div class="drop"></div>
+</div>
+
+<script language="javascript">
+var fx = [];
+ 
+$$('#draggables div').each(function(drag){
+	new Drag.Move(drag, {
+		droppables: $$('#droppables div')
+	});
+ 
+	drag.addEvent('emptydrop', function(){
+		this.setStyle('background-color', '#faec8f');
+	});
+});
+ 
+$$('#droppables div').each(function(drop, index){
+	fx[index] = drop.effects({transition:Fx.Transitions.Back.easeOut});
+	drop.addEvents({
+		'over': function(el, obj){
+			this.setStyle('background-color', '#78ba91');
+		},
+		'leave': function(el, obj){
+			this.setStyle('background-color', '#1d1d20');
+		},
+		'drop': function(el, obj){
+			el.remove();
+			fx[index].start({
+				'height': this.getStyle('height').toInt() + 30,
+				'background-color' : ['#78ba91', '#1d1d20']
+			});
+		}
+	});
+});
+</script>
+</body>
+</html>

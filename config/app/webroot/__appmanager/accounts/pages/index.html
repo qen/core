@@ -1,0 +1,49 @@
+<% extends 'skin/appmanager.html' %>
+<% import 'inc/pagenav.html' as pagenav %>
+
+<% block header %>
+  <%= pagenav.css() %>
+<% endblock %>
+
+<% block contentname %>Pages<% endblock %>
+<% block menu %>
+  <h3>Page</h3>
+  <a href="<%= Uri.path %>/add">Add</a>
+<% endblock %>
+
+<% block body %>
+  <form class="form" action="" >
+  <input name="q" class="left OverText" alt="Search Page Title"> <input class="tiny" type="submit" value="Search" /><br />
+  <br />
+  <% if result %>
+  <table>
+      <tr>
+          <th >Url</th>
+          <th width="100px">Status | Type</th>
+      </tr>
+      <% for item in result %>
+      <tr class="<%= ['row2', 'row1']|cycle(loop.index) %>">
+          <td>
+            <a href="<%= Uri.path %>/<%= result.pageid %>">[<%= result.page_sort %>] <%= result.page_url %></a>
+              <br />
+              <p style="color:#888;"><%= result.page_title %></p>
+              <p style="color:#aaa;"><%= result.page_descr %></p>
+          </td>
+          <td>
+            <%= result.page_typestat AND 1 ? 'Shown' : 'Hidden' %>
+            <br><%= result.page_typestat AND 128 ? 'Simple Page' : '' %>
+            <br><%= result.page_typestat AND 256 ? 'Featured Page' : '' %>
+          </td>
+      </tr>
+      <% endfor %>
+
+  </table><br />
+  <%= pagenav.css(numpage, Get) %>
+  <% else %>
+  <ul class="">
+      <li>Enter key words to search for page title.</li>
+      <li>Blank search will display all page posts.</li>
+  </ul>
+  <% endif %>
+  </form>
+<% endblock %>

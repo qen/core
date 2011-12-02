@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en" xmlns:fb="http://www.facebook.com/2008/fbml">
+  <head>
+    <% block seo_meta %>
+    <% include 'inc/seo_header.html' %>
+    <% endblock %>
+
+    <meta http-equiv="content-type" content="text/html; charset=utf-8" />
+    <meta http-equiv="cache-control" content="no-cache" />
+    <meta http-equiv="pragma" content="no-cache" />
+
+    <link rel="stylesheet" href="<%= Uri.root %>minify/css/<% block __cssinclude__ base64 %>
+          css/common/reset.css,
+          css/common/form.css,
+          js/mootools/FormCheck/theme/classic/formcheck.css,
+          js/mootools/Roar/Roar.css,
+    <% endblock %>" type="text/css" />
+    <script src="<%= Uri.root %>js/mootools/1.2.4.js" language="javascript" type="text/javascript"></script>
+    <script src="<%= Uri.root %>minify/js/<% block __jsinclude__ base64 %>
+            js/mootools/FormCheck/lang/en.js,
+            js/mootools/FormCheck/FormCheck.js,
+            js/mootools/Roar/Roar.js,
+    <% endblock %>" language="javascript" type="text/javascript"></script>
+
+    <% block header %>
+    <% endblock %>
+
+    <script language="javascript"><% block __jsinline__ jsminify %>
+
+      var appvar = new Hash({});
+      var theRoar = null;
+
+      <% filter pulltag('script')|raw %>
+      <% block jsinline %><% endblock %>
+      <% endfilter %>
+
+      window.addEvent('domready', function(){
+        $$('div.appvar').each(function(el){
+          try {
+            obj = JSON.decode(el.get('html').trim());
+            appvar.extend(obj);
+          } catch (e) {};
+        });
+        theRoar = new Roar({
+          position: 'upperRight',
+          duration: 9189
+        });
+
+        try {
+          $$('.theRoar').each(function(el){
+            var msg = el.get('html').trim();
+            var title = 'Success';
+            (function(){
+              if (el.hasClass('error')){
+                theRoar.options.className = 'roar-alert';
+                title = 'Error';
+              }
+              theRoar.alert(title, msg);
+            }).delay(800);
+
+          });
+        } catch (e) {};
+
+        <% filter pulltag('script')|raw %>
+        <% block jsdomready %><% endblock %>
+        <% endfilter %>
+
+      });
+
+<% endblock %></script>
+    
+  </head>
+
+  <body>
+    <div id="fb-root"></div>
+    <script type="text/javascript">
+      window.fbAsyncInit = function() {
+        FB.init({
+          appId   : '320497963578',
+          status  : true, // check login status
+          cookie  : true
+        });
+
+        $$('.xfbml').each(function(el){
+          FB.XFBML.parse(el);
+        });
+
+        // whenever the user logs in, we refresh the page
+        FB.Event.subscribe('auth.login', function() {
+          window.location.reload();
+        });
+      };
+      
+      (function() {
+        var e = document.createElement('script');
+        e.src = document.location.protocol + '//connect.facebook.net/en_US/all.js';
+        e.async = true;
+        document.getElementById('fb-root').appendChild(e);
+      }());
+    </script>
+    <% block HTML %>
+    <% if notifications %>
+      <div style="display:none ">
+        <% if notifications.messages %>
+        <div class="theRoar" >
+          <% for msg in notifications.messages %>
+          <%= msg %><br>
+          <% endfor %>
+        </div>
+        <% endif %>
+        <% if notifications.errors %>
+        <div class="theRoar error" >
+          <% for msg in notifications.errors %>
+          <%= msg %><br>
+          <% endfor %>
+        </div>
+        <% endif %>
+      </div>
+    <% endif %>
+
+    <div style="width:700px; margin: 0 auto;" >
+      <div>
+        <% spaceless %>
+        <a href="<%= Uri.root %>" class="nav">Home</a>&nbsp;|&nbsp;
+        <a href="<%= Uri.root %>property" class="nav">Properties</a>&nbsp;|&nbsp;
+        <a href="<%= Uri.root %>realtor" class="nav">Realtors</a>&nbsp;|&nbsp;
+        <a href="<%= Uri.root %>contactus" class="nav">Contact Us</a>&nbsp;|&nbsp;
+        <a href="<%= Uri.root %>aboutus" class="nav">About Us</a>
+        <% endspaceless %>
+      </div>
+    </div>
+    <br />
+    <br />
+    <br />
+    <% block body %>
+    <% endblock %>
+    <% endblock %>
+    
+    <% block seo_analytics %>
+    <% include 'inc/seo_footer.html' %>
+    <% endblock %>
+  </body>
+</html>

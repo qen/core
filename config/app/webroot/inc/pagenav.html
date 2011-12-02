@@ -1,0 +1,76 @@
+<% macro css() %>
+<style><% filter cssminify|raw %>
+div.pagenav *{
+	font-family:Verdana, Arial, Helvetica, sans-serif !important;
+	font-size: 12px !important;
+  color: #778DA8 !important;
+  text-align: center;
+}
+div.pagenav a{
+	cursor:pointer;
+  font-size: 10px !important;
+	font-weight:bold;
+  padding: 2px 4px;
+  color: #0473BB !important;
+  text-decoration: none;
+}
+div.pagenav a:hover{
+  background: #778DA8 !important;
+  color:#f8f8f8 !important;
+  text-decoration: underline;
+}
+div.pagenav a.disabled, div.pagenav a.disabled:hover{
+  color:#BFCCDF !important;
+  background: inherit !important;
+}
+div.pagenav a.current, div.pagenav a.current:hover{
+	font-weight:bold;
+  border-bottom: 2px solid #778DA8;
+  color:#BFCCDF !important;
+  background: inherit !important;
+}
+div.pagenav span.pageno {
+  -moz-border-radius: 5px;
+  border-radius: 5px;
+  padding: 1px 10px 5px;
+  border-left: 1px solid #333;
+  border-right: 1px solid #333;
+  margin: 0px 5px;
+}
+div.pagenav a.first, div.pagenav a.last{
+  text-decoration:underline !important;
+}
+
+div.pagenav a.first {
+  
+}
+<% endfilter %></style>
+<% endmacro %>
+
+<% macro html(numpage) %>
+<% set pagenav = numpage.nav %>
+<% if pagenav.page_start < pagenav.page_end %>
+  <% set href = numpage.href %>
+  <% autoescape false %>
+	<div class="pagenav">
+  <p>
+	<a <%= pagenav.page_current <= 1 ? 'class="disabled"' : 'href="' ~ href ~ pagenav.page_prev ~ '"' %> >Previous</a>
+  <span class="pageno">
+  <% if pagenav.page_start != 1 %>
+  <a href='<%= href %>'>1</a> ...
+  <% endif %>
+  <% for i in pagenav.page_start..pagenav.page_end %>
+    <a <%= pagenav.page_current == i ? 'class="current"' : 'href="' ~ href ~ i ~ '"' %> ><%= i %></a>
+  <% endfor %>
+  <% if pagenav.page_end != pagenav.page_total %>
+  ... <a href='<%= href %><%= pagenav.page_total %>'><%= pagenav.page_total %></a>
+  <% endif %>
+  </span>
+	<a <%= pagenav.page_current == pagenav.page_end  ? 'class="disabled"' : 'href="' ~ href ~ pagenav.page_next ~ '"' %> >Next</a>
+  </p>
+	</div>
+  <% endautoescape %>
+<% endif %>
+<% endmacro %>
+
+

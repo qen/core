@@ -1,0 +1,103 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html>
+<head>
+	<link rel="stylesheet" type="text/css" href="wmd.css" />
+	<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+	<title>mooWMD demo</title>
+	<style>
+textarea{
+	width: 500px;
+	height: 200px;
+}
+.wmd-panel{
+	width: 300px;
+	background-color: white;
+}
+ul{
+	list-style: none;
+}
+
+	</style>
+<script type="text/javascript">
+window.google_analytics_uacct = "UA-9333073-3";
+</script>
+
+</head>
+<body>
+	<form>
+		<ul>
+			<li>
+			<h2>Only teaxt area</h2>
+			<div id="wmd-editor-uno" class="wmd-panel">
+				<div id="wmd-button-bar-uno" class='wmd-button-bar'></div>
+				<textarea name='id-uno' id='id-uno'></textarea>
+			</div>
+			</li>		
+			
+			
+			
+			
+			<li>
+			<h2>Textarea, preview and output</h2>
+			<div id="wmd-editor-dos" class="wmd-panel">
+				<div id="wmd-button-bar-dos" class='wmd-button-bar'></div>
+				<textarea name='id-dos' id='id-dos'></textarea>
+			</div>
+			<div id='wmd-preview-dos' class="wmd-preview"> </div>			
+			<div id='wmd-output-dos' class="wmd-output"> </div>			
+			</li>		
+			
+			
+			
+			<li>
+			<h2>textarea and preview</h2>
+			<div id="wmd-editor-tres" class="wmd-panel">
+				<div id="wmd-button-bar-tres" class='wmd-button-bar'></div>
+				<textarea name='something-else' id='something-else'></textarea>
+			</div>
+			<div id='myid' class="wmd-preview"> </div>			
+			</li>		
+
+		</ul>	
+	</form>
+
+	<script type='text/javascript' src='http://ajax.googleapis.com/ajax/libs/mootools/1.2.3/mootools-yui-compressed.js'></script>
+	<script type='text/javascript' src='moowmd.js'></script>
+	<script>
+	var MyConfig=[
+		{
+			input:'id-uno',
+			postfix: '-uno'			
+		},
+		
+		{
+			input:'id-dos',
+			postfix:'-dos'
+		},
+		
+		{
+			input:'something-else',
+			postfix:'-tres',
+			preview:'myid'
+		}
+	
+	];
+	
+	window.addEvent('domready',function(){
+		window.MyMooWMD=new mooWMD.WMD(window.MyConfig);
+		window.MyMooWMD.start();
+	});	
+	</script>
+	
+<script type="text/javascript">
+var gaJsHost = (("https:" == document.location.protocol) ? "https://ssl." : "http://www.");
+document.write(unescape("%3Cscript src='" + gaJsHost + "google-analytics.com/ga.js' type='text/javascript'%3E%3C/script%3E"));
+</script>
+<script type="text/javascript">
+try {
+var pageTracker = _gat._getTracker("UA-9333073-3");
+pageTracker._trackPageview();
+} catch(err) {}</script>
+</body>
+</html>
+

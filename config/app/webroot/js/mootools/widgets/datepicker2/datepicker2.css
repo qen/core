@@ -1,0 +1,57 @@
+#datepicker * {
+	line-height: 12px;
+}
+
+#datepicker {
+	font-size: 10px;
+	font-family: Verdana,Arial,Helvetica,sans-serif;
+	width: 198px;
+	height: 162px;
+	background-image: url(calendar_background2.jpg);
+	background-repeat: no-repeat;
+	line-height: 10px;
+}
+#datepicker #datepicker_container{
+	margin-left: 9px;
+	margin-top: 10px;		
+}
+#datepicker table {
+	width: 172px;
+}
+ 
+#datepicker td {
+	text-align: center;
+	padding: 2px;
+	font-size: 9px;
+}
+ 
+#datepicker td.dayfield {
+	cursor: pointer;
+}
+ 
+#datepicker td.dayfield_over {
+	background: #CCC;
+}
+ 
+#datepicker td.arrow a{
+	cursor: pointer;
+	font-size:12px;
+	text-decoration:none;
+}
+#datepicker td.arrow a:hover{
+	
+}
+
+#datepicker td.inputday {
+	color: #f00;
+}
+ 
+#datepicker td.today {
+	color: #F0620A;
+	font-weight: bold;
+}
+ 
+#datepicker div.closeme {
+	margin-top: 5px;
+	text-align: center;
+}

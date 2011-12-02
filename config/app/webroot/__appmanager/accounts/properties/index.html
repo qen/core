@@ -1,0 +1,57 @@
+<% extends 'skin/appmanager.html' %>
+<% import 'inc/pagenav.html' as pagenav %>
+
+<% block header %>
+  <%= pagenav.css() %>
+<% endblock %>
+
+<% block contentname %>Properties<% endblock %>
+<% block menu %>
+  <h3>Properties</h3>
+  <a href="<%= Uri.path %>/add">Add</a>
+<% endblock %>
+
+<% block body %>
+  <form class="form" action="" >
+  <input name="q" class="left OverText" alt="Search Property Name"> <input class="tiny" type="submit" value="Search" /><br />
+  <br />
+  <% if result %>
+  <table>
+      <tr>
+          <th width="100px">Property</th>
+          <th></th>
+          <th width="180px">Status</th>
+      </tr>
+      <% for item in result %>
+      <tr class="<%= ['row2', 'row1']|cycle(loop.index) %>">
+          <td><a href="<%= Uri.path %>/<%= result.propertyid %>">
+              <div style="overflow: hidden; width: 100px; height: 100px; background: url(<%= Uri.path %>/<%= result.propertyid %>/image) no-repeat scroll center center transparent;" class="imagecontainer" id=""></div>
+          </a></td>
+          <td>
+            <a href="<%= Uri.path %>/<%= result.propertyid %>"><%= result.prop_name %></a>
+              <br />
+              <%= result.fulladdress %>
+              <p style="color:#aaa;"><%= result.prop_descr %></p>
+          </td>
+          <td>
+            <p>
+              <%= ((result.prop_typestat AND 1)? 'Shown': 'Hidden')  %><br />
+              <%= ((result.prop_typestat AND 2)? 'Sold': '')  %><br />
+              <%= ((result.prop_typestat AND 4)? 'Featured': '')  %>
+            </p>
+              
+          </td>
+
+      </tr>
+      <% endfor %>
+
+  </table><br />
+  <%= pagenav.css(numpage, Get) %>
+  <% else %>
+  <ul class="">
+      <li>Enter key words to search for property name.</li>
+      <li>Blank search will display all available properties.</li>
+  </ul>
+  <% endif %>
+  </form>
+<% endblock %>

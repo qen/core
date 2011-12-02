@@ -1,0 +1,145 @@
+<% extends 'skin/appmanager.html' %>
+<% block header %>
+<script type="text/javascript" src="<%= params['uri']['root'] %>/js/mootools/wysiwyg/wysiwyg.js"></script>
+<link rel="stylesheet" href="<%= params['uri']['root'] %>/js/mootools/wysiwyg/style.css" type="text/css" />
+<style type="text/css">
+  div.blogtitle input{
+    font-size: 24px;
+    height: 32px;
+    width: 640px;
+  }
+  div.blogtitle label.overTxtLabel{
+    font-size:24px;
+    font-weight:normal;
+  }
+</style>
+<% endblock %>
+
+<% block jsinline %>
+<script language="javascript" >
+
+var DW = null;
+function validateRelUrl(el) {
+  var check = el.value;
+  //var re = /^(http|https|ftp)\:\/\/[a-z0-9\-\.]+\.[a-z]{2,3}(:[a-z0-9]*)?\/?([a-z0-9\-\._\?\,\'\/\\\+&amp;%\$#\=~])*$/i
+  var re = /^((http|https|ftp)\:\/\/[a-z0-9\-\.]+\.[a-z]{2,3}(:[a-z0-9]*)?)?\/([a-z0-9\-\._\?\,\'\/\\\+&amp;%\$#\=~])+$/i
+
+  if (!re.test(check)) {
+    el.errors.push( 'Please enter a valid url' );
+    el.errors.push( 'Example:' );
+    el.errors.push( '/my-valid/url-page' );
+    el.errors.push( 'http://www.example.com/my-valid/url-page' );
+    return false;
+  }
+  return true;
+}//end function
+</script>
+<% endblock %>
+
+<% block jsdomready %>
+<script language="javascript" >
+
+$$('input.typestat').each(function(el){
+    if (el.get('value') & appvar.page.typestat )
+      el.fireEvent('click').setProperty('checked', true);
+});
+
+
+DW = new wysiwyg({
+	textarea: $('wysiwyg').getElement('textarea'),
+  src: '../wysiwyg/canvas'
+});
+</script>
+
+<% endblock %>
+
+<% block contentname %>CMS | <%= details.page_url|default('/') %><% endblock %>
+<% block menu %>
+<h3>Page</h3><br />
+<p><%= details.page_descr %></p>
+<% endblock %>
+
+<% block body %><a name="top"></a>
+    <form class="form FormCheck" action="<%= params['uri']['path'] %>/page/save?url=<%= details.page_url %>" method="post" enctype="multipart/form-data" autocomplete="off">
+
+        <div class="blogtitle">
+        <input name="d[page_title]" value="<%= details.page_title %>" type="text"  class="validate['required'] OverText fL" alt="Title" maxlength="100">
+        <label class="requiredleft left" style="width:24px; height:24px;"></label><br />
+        </div>
+        
+        <br />
+        <div class="weezee" id="wysiwyg"  style="background-color:#E6E6E6;">
+            <textarea class="" name="d[page_details]" rows="5" cols="30"><%= details.page_details %></textarea>
+        </div>
+        <br />
+        <input value="Save" type="submit" class="">
+        <br />
+        <br />
+        <br />
+        <br />
+        <h3>Page Details</h3>
+        <hr/>
+        <label class="required">URL<em>Relative Url must start with /</em></label>
+        <input name="d[page_url]" type="text" value="<%= details.page_url|default('/') %>" class="validate['required','~validateRelUrl']"  /><br />
+
+        <label class="">Description<em></em></label>
+        <input name="d[page_descr]" value="<%= details.page_descr %>" type="text"  maxlength="100"><br />
+
+        <label class="">Group<em></em></label>
+        <input name="d[page_group]" value="<%= details.page_group %>" type="text"  maxlength="100"><br />
+
+        <label class="">Sort<em></em></label>
+        <input name="d[page_sort]" value="<%= details.page_sort|default(0) %>" type="text"  maxlength="100">
+        <br/>
+
+        <label>Settings </label><div class="fL">
+          <input name="d[page_typestat][]" value="1" class="left typestat" id="typebit1" type="checkbox"><label class="left normal" for="typebit1" style="">Show</label><br>
+          <input name="d[page_typestat][]" value="128" class="left typestat" id="typebit2" type="checkbox"><label class="left normal" for="typebit2" style="">Simplage Page</label><br>
+          <input name="d[page_typestat][]" value="256" class="left typestat" id="typebit3" type="checkbox"><label class="left normal" for="typebit3" style="">Featured Page</label><br>
+        </div><br /><br />
+        
+        <label class="" >Page Settings<em>YAML Config</em></label>
+        <textarea name="d[page_settings]" cols="80" rows="24" style="width:500px; font-family:'Courier New', Courier, monospace"><%= details.page_settings %></textarea>
+        <br />
+        <hr>
+        <input value="Save" type="submit" class="">
+        <br />
+        <br />
+        <br />
+        <br />
+        
+        <sup class="fR"><a href="#top" class="SmoothScroll" style="font-size:10px">Top</a><a name="metatags"></a></sup>
+        <h3>Page SEO</h3>
+        <hr/>
+        <br />
+        <label class="" >Page URL</label>
+        <input name="d[Metatags][page_url]" type="text" value="<%= details.Metatags.page_url %>" /><br />
+
+        <label class="" >Page Title</label>
+        <input name="d[Metatags][page_title]" type="text" value="<%= details.Metatags.page_title|default(details.page_title) %>" /><br />
+
+        <label class="" >Meta tag Description</label>
+        <input name="d[Metatags][meta_descr]" type="text" value="<%= details.Metatags.meta_descr %>" /><br />
+
+        <label class="" >Meta tag Keywords</label>
+        <input name="d[Metatags][meta_keywords]" type="text" value="<%= details.Metatags.meta_keywords %>" /><br />
+        
+        <br />
+        <hr>
+        <input value="Save" type="submit" class="">
+        <br />
+        <br />
+        <br />
+        
+        <br />
+        <br />
+        <br />
+        <br />
+        <br />
+    </form>
+<div class="appvar"><% spaceless %>{
+page : {
+    typestat: <%= details.page_typestat|default(0) %>
+}
+}<% endspaceless %></div>
+<% endblock %>

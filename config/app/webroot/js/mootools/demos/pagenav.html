@@ -1,0 +1,50 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1" />
+<title>Pagenav Document</title>
+
+<script type="text/javascript" src="../mootools-1.2.1-core.js"></script>
+<script type="text/javascript" src="../widgets/pagenav.js"></script>
+<script type="text/javascript">
+window.addEvents({
+	domready:function(){
+		/*
+		var paging = {"page_current":8,"page_total":12,"page_rows":3,"records_count":1000};
+		
+		pfoobar = new Pagenav($('div_pagenav'), {
+			click: function(page, current){
+				alert(page + " " + current );
+			}
+		});
+		pfoobar.create_pagenav(paging.page_current, paging.page_total);
+		*/
+		new Pagenav($('div_pagenav'), {
+			click: function(page, current){
+				alert(page + " " + current );
+			}
+		}).create_pagenav(2, 1000);
+		
+	},
+	load:function(){}
+});
+
+
+</script>
+<style>
+#div_pagenav a{
+	margin-right: 5px;
+	cursor: pointer;
+}
+#div_pagenav a.pageCurrent{
+	color:#FFCC00
+}
+#div_pagenav a.disabled{
+	color:#999999;
+}
+</style>
+</head>
+<body>
+<div id="div_pagenav"><span id="pages"></span> | <a id="next">Next</a> <a id="previous">Prev</a></div>
+</body>
+</html>

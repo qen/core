@@ -1,0 +1,161 @@
+<% macro js() %>
+<script language="javascript" >
+var Category = {
+  'value': $$('input[name=\'CategoryId\']')[0].get('value') || 0,
+  'container' : $('CategorySelect'),
+  'a' : $$('a.Category'),
+  'div' : $$('div.Category'),
+  'build': function(all, i){
+    i++;
+    all.each(function(el){
+      Category.container.grab(new Element('option', {
+        'value' : el.categoryid,
+        'html': el.cat_name,
+        'styles':{
+          'padding-left': 18 * i
+        },
+        'selected' : (el.categoryid == Category.value) ? true: false
+      }));
+
+      if (el.children) {
+        Category.build(el.children, i);
+      }
+    });
+  },
+  'req' : new Request.JSON({
+      url: 'category/save',
+      onComplete: function(data){
+        if (!data) return false;
+        if (data.status != 'success') {
+          return false;
+        }
+        if (data.notice == 'category added')
+          Category.value = data.response.categoryid
+
+        Category.container.empty();
+        Category.container.grab(new Element('option', {
+          'value' : 0,
+          'html' : 'None&nbsp;'
+        }));
+
+        Category.build(data.result, 0);
+        Category.div.fireEvent('mouseleave');
+        Category.container.fireEvent('change');
+      }
+    }),
+  'queue' : new Request.Queue({	onComplete: function(name, instance, text, xml){}	})
+};
+Category.queue.addRequest('request', Category.req);
+
+Category.container.addEvent('change', function(){
+  var value = Category.container.get('value');
+  $$('input[name=\'CategoryId\']').set('value', value);
+  if (value == 0) {
+    $$('a.Category.Edit').addClass('disabled');
+    return true;
+  }//end if
+  
+  $$('input.CategoryUpdateText').set('value', Category.container.getChildren('option[value='+value+']').get('html'));
+  $$('a.Category.Edit').removeClass('disabled');
+});
+
+Category.a.each(function(el){
+  el.addEvent('click', function(evnt){
+    if (el.hasClass('disabled')) return false;
+    var div = this.get('html');
+
+    $$('div.Category.'+div).toggle();
+    if (this.hasClass('selected')){
+      this.removeClass('selected');
+      return;
+    }
+    
+    $$('a.Category.selected').fireEvent('click');
+    this.addClass('selected');
+    try {
+      $$('div.Category.'+div+' input[type=text]')[0].focus();
+    } catch (e) {}
+
+    evnt.stopPropagation();
+  });
+})
+
+$(window.document.body).addEvent('click', function(){
+  Category.div.setStyle('display', 'none');
+  Category.a.removeClass('selected');
+});
+
+$$('input.CategorySaveButton').addEvent('click', function(){
+  var post = { 'name' : this.getPrevious('input.CategorySaveText').get('value'), 'parentid':Category.container.get('value')  };
+  Category.req.send({'url': 'category/save', 'data': post});
+  this.getPrevious('input.CategorySaveText').set('value', '');
+});
+
+$$('input.CategoryUpdateButton').addEvent('click', function(){
+  if (Category.container.get('value') == 0) return false;
+
+  var post = { 'name' : this.getPrevious('input.CategoryUpdateText').get('value'), 'categoryid':Category.container.get('value')  };
+  Category.req.send({'url': 'category/save', 'data': post});
+});
+
+$$('input.CategoryDeleteButton').addEvent('click', function(){
+  if (Category.container.get('value') == 0) return false;
+
+  var post = { 'delete' : 1, 'categoryid':Category.container.get('value')  };
+  Category.req.send({'url': 'category/save', 'data': post});
+});
+
+Category.req.send({url:'category/lists'});
+</script>
+<% endmacro %>
+
+<% macro css() %>
+<style type="text/css">
+  a.Category {
+    font-size:10px;
+    font-weight:bold;
+    font-family:verdana;
+    padding: 5px 10px;
+  }
+  a.selected {
+    background: none repeat scroll 0 0 #FF9900;
+    color: #FFFFFF;
+  }
+  a.disabled{
+    color:#ccc;
+  }
+  div.Category {
+    background: none repeat scroll 0 0 #FF9900;
+    padding: 10px 24px 24px;
+    position: absolute;
+    display:none;
+    color:#f8f8f8;
+    -moz-box-shadow:4px 8px 8px #999;
+    -webkit-box-shadow:4px 8px 8px #999;
+    box-shadow:4px 8px 8px #999;
+    top: 26px;
+  }
+  select#CategorySelect {
+    height:27px;
+  }
+  select#CategorySelect option{
+    padding: 3px 0;
+  }
+</style>
+<% endmacro %>
+
+<% macro html() %>
+<label>Category</label><div style="position:relative" class="fL">
+  <select id="CategorySelect" style="margin-right: 10px; max-width: 290px;" >
+    <option>None</option>
+  </select><a class="mini Category Edit">Edit</a> <a class="mini Category Add">Add</a>
+  <div class="Category Add">
+    Category Name:<br />
+    <input class="CategorySaveText" value="" type="text" /> <input class="tiny CategorySaveButton" type="button" value="Save" />
+  </div>
+  <div class="Category Edit">
+    Category Name:<br />
+    <input class="CategoryUpdateText" value="" type="text" /> <input class="tiny CategoryUpdateButton" type="button" value="Update" /> <input class="tiny CategoryDeleteButton" type="button" value="Delete" /><br />
+  </div>
+</div>
+<% endmacro %>

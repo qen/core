@@ -1,0 +1,151 @@
+<% extends 'skin/appmanager.html' %>
+<% import 'inc/category/form.html' as category %>
+<% import 'inc/ui/textsearch.html' as textsearch %>
+<% block header %>
+<script type="text/javascript" src="<%= Uri.root %>js/mootools/wysiwyg/wysiwyg.js"></script>
+<link rel="stylesheet" href="<%= Uri.root %>js/mootools/wysiwyg/style.css" type="text/css" />
+
+<link href="<%= Uri.root %>js/mootools/DatePicker/datepicker_vista/datepicker_vista.css" rel="stylesheet" type="text/css" media="screen">
+<script src="<%= Uri.root %>js/mootools/DatePicker/DatePicker.js" type="text/javascript"></script>
+<%= category.css() %>
+<%= textsearch.css() %>
+<% endblock %>
+
+<% block jsdomready %>
+<%= category.js() %>
+<%= textsearch.js() %>
+<script language="javascript" >
+$$('input.DatePicker').each(function(el){
+    el.set('readonly', true);
+    new DatePicker(el,{
+        pickerClass: 'datepicker_vista',
+        timePicker: false,
+        //format: '%b %d, %Y %I:%M %p',
+        format: '%b %d, %Y',
+        startDay: 0
+    });
+});
+
+$$('input.typestat').each(function(el){
+    if (el.get('value') & appvar.blog.typestat )
+      el.fireEvent('click').setProperty('checked', true);
+});
+
+new wysiwyg({
+	textarea: $('wysiwyg').getElement('textarea')
+});
+
+TextSearch.url = 'tag/query';
+TextSearch.name = function(input){
+  return 'Tag';
+};
+TextSearch.li = function(el){
+  
+  if (this.getParent().getElements('a input[value='+el.tag_name+']').length != 0) return false;
+
+  return {
+    'html': el.tag_name,
+    'rel': el.tag_name,
+    'class': 'tags'
+  };
+};
+TextSearch.input_enter = function(){
+  if (this.get('value') == '') return false;
+  TextSearch.events.select.click.bind(this)();
+}
+TextSearch.init();
+  
+</script>
+
+<% endblock %>
+
+<% block contentname %>Blogs<% endblock %>
+<% block menu %>
+  <h3>Blog</h3>
+  <a href="<%= Uri.path %>/add">Add</a>
+  <a href="<%= Uri.path %>">Search</a>
+  <% if details.blogid %>
+  <a class="ConfirmBox" href="<%= Uri.path %>/<%= details.blogid %>/delete" title="Continue to Delete Blog Post?" style="color:#ccc;" >Delete</a>
+  <% endif %>
+<% endblock %>
+
+<% block body %><a name="top"></a>
+    <form class="form FormCheck" action="<%= Uri.path %>/save" method="post" enctype="multipart/form-data" autocomplete="off">
+      <input name="d[blogid]" value="<%= details.blogid|default(0) %>" type="hidden" />
+      <input name="d[blog_url]" value="<%= details.blog_url %>" type="hidden" />
+      <input name="d[blog_typestat][]" value="0" type="hidden" />
+      <input name="CategoryId" value="<%= details.Categories.categoryid|default(0) %>" type="hidden" />
+        <h3>
+        <%= details.blogid ? 'Blog Post #' ~ details.blogid : 'Add Post' %>
+        </h3>
+        <hr>
+
+        <label class="required">Title</label>
+        <input name="d[blog_title]" value="<%= details.blog_title %>" type="text"  class="validate['required'] " maxlength="100">
+        <br/>
+
+        <label>Description<em>Excerpt</em></label>
+        <textarea name="d[blog_descr]" style="width: 240px; height: 100px;"><%= details.blog_descr %></textarea><br />
+
+        <label class="">Date</label>
+        <input name="d[blog_date]" type="text" value="<%= details.blog_date|date('M d, Y') %>" class="DatePicker"  /><br />
+        <label>Tags</label><div>
+          <%= textsearch.html(details.Tags, 'Tag', 'tag_name', 'tag_name') %>
+        </div>
+        <br />
+        <%= category.html() %><br />
+        <br />
+        <label>Settings </label><div class="fL">
+          <input name="d[blog_typestat][]" value="1" class="left typestat" id="typebit1" type="checkbox"><label class="left normal" for="typebit1" style="">Show</label><br>
+          <input name="d[blog_typestat][]" value="2" class="left typestat" id="typebit2" type="checkbox"><label class="left normal" for="typebit2" style="">Featured</label><br>
+        </div><br /><br />
+
+        <br />
+
+        <h3>Blog Posts</h3>
+        <hr/>
+        <br />
+        
+        <div class="weezee" id="wysiwyg">
+            <textarea name="d[blog_details]" rows="5" cols="30"><%= details.blog_details %></textarea>
+        </div>
+        <br />
+        <input value="Save" type="submit" class="">
+        <br />
+        <br>
+        <br>
+        <sup class="fR"><a href="#top" class="SmoothScroll" style="font-size:10px">Top</a><a name="metatags"></a></sup>
+        <h3>Blog SEO</h3>
+        <hr/>
+        <br />
+        <label class="" >Page Title</label>
+        <input name="d[Metatags][page_title]" type="text" value="<%= details.Metatags.page_title|default(details.blog_title) %>" /><br />
+        
+        <label class="" >Meta tag  Title</label>
+        <input name="d[Metatags][meta_title]" type="text" value="<%= details.Metatags.meta_title %>" /><br />
+
+        <label class="" >Meta tag Description</label>
+        <input name="d[Metatags][meta_descr]" type="text" value="<%= details.Metatags.meta_descr %>" /><br />
+
+        <label class="" >Meta tag Keywords</label>
+        <input name="d[Metatags][meta_keywords]" type="text" value="<%= details.Metatags.meta_keywords %>" /><br />
+
+        <label class="" >Analytics</label>
+        <textarea name="d[Metatags][meta_analytics]" style="width: 240px; height: 180px;"><%= details.Metatags.meta_analytics %></textarea><br />
+        
+        <br />
+        <hr>
+        <input value="Save" type="submit" class="">
+        <br />
+        <br />
+        <br />
+
+        <br />
+        <br />
+    </form>
+<div class="appvar"><% spaceless %>{
+blog : {
+    typestat: <%= details.blog_typestat|default(0) %>
+}
+}<% endspaceless %></div>
+<% endblock %>

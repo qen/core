@@ -1,0 +1,53 @@
+<% extends 'skin/appmanager.html' %>
+<% import 'inc/pagenav.html' as pagenav %>
+
+<% block header %>
+  <%= pagenav.css() %>
+<% endblock %>
+
+<% block contentname %>Realtors<% endblock %>
+<% block menu %>
+  <h3>Realtors</h3>
+  <a href="<%= Uri.path %>/add">Add</a>
+<% endblock %>
+
+<% block body %>
+  <form class="form" action="" >
+  <input name="q" class="left OverText" alt="Search Realtor Name"> <input class="tiny" type="submit" value="Search" /><br />
+  <br />
+  <% if result %>
+  <table>
+      <tr>
+          <th width="100px">Realtor</th>
+          <th></th>
+          <th>Status</th>
+      </tr>
+      <% for item in result %>
+      <tr class="<%= ['row2', 'row1']|cycle(loop.index) %>">
+          <td><a href="<%= Uri.path %>/<%= result.realtorid %>">
+              <div style="overflow: hidden; width: 100px; height: 100px; background: url(<%= Uri.path %>/<%= result.realtorid %>/image) no-repeat scroll center center transparent;" class="imagecontainer" id=""></div>
+          </a></td>
+          <td>
+            <a href="<%= Uri.path %>/<%= result.realtorid %>"><%= result.rl_fname %> <%= result.rl_lname %></a>
+              <br />
+              <p style="color:#aaa;"><%= result.rl_email %></p>
+          </td>
+          <td>
+            <p>
+              <%= ((result.rl_typestat AND 1)? 'Shown': 'Hidden')  %><br />
+              <%= ((result.rl_typestat AND 2)? 'Featured': '')  %>
+            </p>
+          </td>
+      </tr>
+      <% endfor %>
+
+  </table><br />
+  <%= pagenav.css(numpage, Get) %>
+  <% else %>
+  <ul class="">
+      <li>Enter key words to search for realtor name.</li>
+      <li>Blank search will display all available realtors.</li>
+  </ul>
+  <% endif %>
+  </form>
+<% endblock %>

@@ -1,0 +1,46 @@
+<% extends 'skin/appmanager.html' %>
+<% block header %>
+<style type="text/css">
+<% filter cssminify|raw %>
+a.page {
+    background:none repeat scroll 0 0 #FBFBF3;
+    border:1px solid #CCCCCC;
+    color:#888888;
+    margin:10px auto;
+    padding:8px;
+    width:540px;
+    font-family: Georgia,"Times New Roman";
+    font-size: 18px;
+    display:block;
+    position:relative;
+
+}
+a.page:hover{
+    border:1px solid #ff9900;
+    text-decoration: none;
+}
+a.page p {
+    font-size: 12px;
+}
+a.page:hover h5 {
+  text-decoration: underline;
+}
+<% endfilter %>
+</style>
+<% endblock %>
+
+<% block content %>
+  <% if Access %>
+  <% for item in Access %>
+  <a class="page SqueezeBox" rel="add" href="<%= Uri.path %>/accounts/<%= item.accountid %>">
+      <h5><%= item.acc_name %></h5>
+      <span style="position:absolute; right:10px;"><%= item.status %> <%= (item.acc_typestat AND 2) ? '&bull; Suspended' : ''  %> <%= (item.acc_typestat AND 4) ? '&bull; Pending' : ''  %></span>
+      <p>
+        <sup><%= item.acc_code %>#<%= item.acc_uid %></sup>
+      </p>
+      <p><%= item.acc_descr %></p>
+  </a>
+  <% endfor %>
+  <% endif %>
+  <br />
+<% endblock %>
